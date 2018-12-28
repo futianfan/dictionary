@@ -125,7 +125,7 @@ class Multihot_Dictionary_RNN(Multihot_RNN, torch.nn.Module):
 
     ### new version
     def dictionary_decoder(self, X):
-        return torch.matmul(X, self.Dictionary.weight).softmax(1)
+        return torch.matmul(X, self.Dictionary.weight)
         #return torch.matmul(X, self.Dictionary.transpose(1,0))
 
     def reconstruct_after_decode(self, X):
