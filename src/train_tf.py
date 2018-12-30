@@ -50,13 +50,35 @@ def train_multihot_rnn():
 			print('Loss: {}, test AUC {}.'.format(total_loss, auc))
 			total_loss = 0
 
+def train_multihot_rnn_dictionary():
+	from model_tf import Multihot_Rnn_Dictionary
+	from stream import Create_Multihot_Data
+	from config import get_multihot_rnn_dictionary_TF_config
+
+	config = get_multihot_rnn_dictionary_TF_config()
+	train_iter = config['train_iter']
+	TrainData = Create_Multihot_Data(is_train = True, **config)
+	TestData = Create_Multihot_Data(is_train = False, **config)
+
+	multihot_rnn_dictionary = Multihot_Rnn_Dictionary(**config)
+	batch_num = TrainData.num_of_iter_in_a_epoch
+	total_loss = 0
+	for i in range(train_iter):
+		data, data_len, label = TrainData.next()
+		loss = multihot_rnn_dictionary.train(data, label, data_len)
+		total_loss += loss 
+		if i > 0 and i % batch_num == 0:
+			auc = test(multihot_rnn_dictionary, TestData)
+			print('Loss: {}, test AUC {}.'.format(total_loss, auc))
+			total_loss = 0 			
+
 
 
 
 
 if __name__ == '__main__':
-	train_multihot_rnn()
-
+	#train_multihot_rnn()
+	train_multihot_rnn_dictionary()
 
 
 
