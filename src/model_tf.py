@@ -38,14 +38,12 @@ class MultihotRnnBase(object):
 		self.sess = tf.Session()
 		self.sess.run(tf.global_variables_initializer())
 
-	### build model
-	def _build(self):
-		### placeholder
+	def _build_placeholder(self):
 		self.X = tf.placeholder(dtype = tf.float32, shape = [None, self.max_length, self.input_dim])
 		self.Y = tf.placeholder(dtype = tf.float32, shape = [None, self.num_class])
 		self.seqlen = tf.placeholder(dtype = tf.int32, shape = [None])
 
-		### forward: rnn
+	def _build_rnn(self):
 		batch_size = tf.shape(self.X)[0] 
 		x_ = tf.unstack(value = self.X, num = self.max_length, axis = 1)
 		assert len(x_) == self.max_length
@@ -55,16 +53,25 @@ class MultihotRnnBase(object):
 		assert len(outputs) == self.max_length
 		outputs = tf.stack(outputs, axis = 1)
 		index = tf.range(0, batch_size) * self.max_length + (self.seqlen - 1)
-		outputs = tf.gather(tf.reshape(outputs, [-1, self.rnn_in_dim]), index)
+		self.outputs = tf.gather(tf.reshape(outputs, [-1, self.rnn_in_dim]), index)
 
+	def _build_classify_loss(self):
+		self.cost_fn = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=self.Y,logits=self.logits))
+
+
+	### build model
+	def _build(self):
+		### placeholder
+		self._build_placeholder()
+		### forward: rnn
+		self._build_rnn()
 		### forward: full-connect
 		weight = tf.Variable(tf.random_normal(shape = [self.rnn_in_dim, self.num_class]))
 		bias = tf.Variable(tf.zeros(shape = [self.num_class]))
-		self.logits = tf.matmul(outputs, weight) + bias 
+		self.logits = tf.matmul(self.outputs, weight) + bias 
 		self.outputs_prob = tf.nn.softmax(logits = self.logits, axis = 1)
-
 		### loss 
-		self.cost_fn = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=self.Y,logits=self.logits))
+		self._build_classify_loss() 
 		### train_op
 		self.train_fn = tf.train.GradientDescentOptimizer(learning_rate=self.LR).minimize(self.cost_fn)
 		#acc_fn = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(Y, 1), tf.argmax(y_pred, 1)), tf.float32))
@@ -85,17 +92,51 @@ class Multihot_Rnn_Dictionary(MultihotRnnBase):
 	"""
 
 	"""
-	def _build(self):
-		### placeholder
-		self.X = tf.placeholder(dtype = tf.float32, shape = [None, self.max_length, self.input_dim])
-		self.Y = tf.placeholder(dtype = tf.float32, shape = [None, self.num_class])
-		self.seqlen = tf.placeholder(dtype = tf.int32, shape = [None])
+	def _build_placeholder(self):
+		MultihotRnnBase._build_placeholder(self)
 		self.X_recon = tf.placeholder(dtype = tf.float32, shape = [None, self.input_dim])
 
-		### forward rnn
+	def _build_dictionary(self):
+		pass 
+		### forward
+
+		### loss
+		self.dictionary_loss = 0
+
+	def _build_reconstruction(self):
+		### forward
+		pass 
+		### loss 
 
 
-		### forward 
+	def _build(self):
+		### placeholder 
+		self._build_placeholder()
+		### forward: rnn
+		self._build_rnn()
+
+		#### I: dictionary learning module
+
+		self._build_dictionary()
+
+
+		### II: classify Module
+		"""
+		xxx
+		""" 
+		self._build_classify_loss() 
+
+		### III: reconstruction module
+
+
+
+		### train_op
+		#self.train_fn = tf.train.GradientDescentOptimizer(learning_rate=self.LR).minimize(self.cost_fn)
+		#acc_fn = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(Y, 1), tf.argmax(y_pred, 1)), tf.float32))
+
+
+
+
 
 
 
