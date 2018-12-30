@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np 
 from time import time
 from sklearn.metrics import roc_auc_score
-torch.manual_seed(2)    # reproducible
+torch.manual_seed(2)    # reproducible torch:2 np:3
 np.random.seed(3)
 
 from config import get_multihot_rnn_config, get_multihot_dictionary_rnn_config, get_pearl_config, get_mnist_dictionary_config
