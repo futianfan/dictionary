@@ -99,8 +99,7 @@ class Multihot_Rnn_Dictionary(MultihotRnnBase):
 		MultihotRnnBase._build_placeholder(self)
 		self.X_recon = tf.placeholder(dtype = tf.float32, shape = [None, self.input_dim])
 
-	def _build_dictionary(self):
-		pass 
+	def _build_dictionary(self): 
 		### forward
 		self.dictionary_matrix = tf.Variable(tf.random_normal(
 			shape = [self.rnn_in_dim , self.dictionary_size]), 
@@ -127,9 +126,20 @@ class Multihot_Rnn_Dictionary(MultihotRnnBase):
 
 	def _build_reconstruction(self):
 		### forward
-		pass 
+		self.sparse_code_normalized = tf.nn.l2_normalize(self.sparse_code, axis = 1)
+		self.ssf = tf.matmul(self.sparse_code_normalized, tf.transpose(self.dictionary_matrix, perm = [1,0]))
+		self.weight_reconstruction = tf.Variable(tf.random_normal(
+				shape = [self.rnn_in_dim, self.input_dim], 
+				dtype = tf.float32))
+		self.bias_reconstruction = tf.Variable(tf.zeros(
+				shape = [self.input_dim],
+				dtype = tf.float32
+			))   
+		self.output_recon =  tf.matmul(self.ssf, self.weight_reconstruction) + self.bias_reconstruction ### tf.sigmoid() 
 		### loss 
-		self.reconstruction_loss = 0 
+		self.reconstruction_loss0 = tf.nn.sigmoid_cross_entropy_with_logits(labels=self.X_recon,logits=self.output_recon)
+		self.reconstruction_loss1 = tf.reduce_sum(self.reconstruction_loss0, axis = 1)
+		self.reconstruction_loss = tf.reduce_mean(self.reconstruction_loss1)
 
 	def _build(self):
 		### placeholder 
@@ -138,14 +148,10 @@ class Multihot_Rnn_Dictionary(MultihotRnnBase):
 		self._build_rnn()
 
 		#### I: dictionary learning module
-
 		self._build_dictionary()
 
 
-		### II: classify Module
-		"""
-		xxx
-		""" 
+		### II: classify Module 
 		self.weight_classify = tf.Variable(tf.random_normal(shape = [self.dictionary_size, self.num_class]))
 		self.bias_classify = tf.Variable(tf.zeros(shape = [self.num_class]))
 		self.logits = tf.matmul(self.sparse_code, self.weight_classify) + self.bias_classify 
@@ -155,7 +161,7 @@ class Multihot_Rnn_Dictionary(MultihotRnnBase):
 		### III: reconstruction module
 		self._build_reconstruction()
 
-
+		### total loss 
 		self.total_loss = self.eta1 * self.dictionary_loss \
 						+ self.eta2 * self.reconstruction_loss\
 		 				+ self.eta3 * self.classify_loss
@@ -164,7 +170,12 @@ class Multihot_Rnn_Dictionary(MultihotRnnBase):
 		self.train_fn = tf.train.GradientDescentOptimizer(learning_rate=self.LR).minimize(self.total_loss)
 		#acc_fn = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(Y, 1), tf.argmax(y_pred, 1)), tf.float32))
 
-
+	def train(self, X, Y_1d, seqlen, X_recon):
+		Y_2d = _1dlabel_to_2dlabel(Y_1d)
+		classify_loss, reconstruction_loss, dictionary_loss, _ = self.sess.run(
+			[self.classify_loss, self.reconstruction_loss, self.dictionary_loss, self.train_fn], \
+			feed_dict = {self.X:X, self.Y:Y_2d, self.seqlen:seqlen, self.X_recon:X_recon})
+		return classify_loss, reconstruction_loss, dictionary_loss 
 
 
 
@@ -198,8 +209,6 @@ if __name__ == '__main__':
 
 	logits = dynamic_rnn(x=X, seqlen=seqlen, weights=WEIGHTS['out'], bias=BIAS['out'])
 	y_pred = tf.nn.softmax(logits=logits)
-
-
 
 
 """

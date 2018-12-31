@@ -151,9 +151,9 @@ def get_multihot_rnn_dictionary_TF_config():
 	config['train_file'] = os.path.join(config['data_folder'], 'training_data_1.txt')
 	config['test_file'] = os.path.join(config['data_folder'], 'test_data_1.txt')
 
-	config['eta1'] = 1e-1
-	config['eta2'] = 1
-	config['eta3'] = 1
+	config['eta1'] = 1e0	### dictionary
+	config['eta2'] = 1e-2	### reconstruction
+	config['eta3'] = 1		### classify
 	config['lambda1'] = 1e-3
 	config['lambda2'] = 1e-2	
 	config['dictionary_size'] = 10

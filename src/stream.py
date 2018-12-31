@@ -150,6 +150,28 @@ class Create_Multihot_Dictionary_Data(Create_Multihot_Data):
 		data, batch_leng = batch_lst_to_data(data)
 		return data, data_lst1d_mat, batch_leng, label 
 
+
+class Create_TF_Multihot_Dictionary_Data(Create_Multihot_Dictionary_Data):
+
+	def next(self):
+		data, label = Create_Multihot_Data.next0(self)
+
+		from functools import reduce
+		f = lambda line: reduce(lambda x,y: x+y, line)
+		data_lst1d = list((map(f,data)))
+		data_lst1d_mat = list(map(self.lst_to_multihot_vec, data_lst1d))
+		data_lst1d_mat = [i.reshape(1,-1) for i in data_lst1d_mat]
+		data_lst1d_mat = np.concatenate(data_lst1d_mat, axis = 0) 
+
+		data, batch_leng = batch_lst_to_data(data)
+		return data, batch_leng, label, data_lst1d_mat
+
+
+
+
+
+
+
 class Create_Pearl_Data(Create_Multihot_Data):
 	def __init__(self, is_train = True, **config):
 		Create_Multihot_Data.__init__(self, is_train, **config)
