@@ -29,6 +29,14 @@ def code_to_visit_level(admissions, timestamp):
 		visit_dict[time].append(adm)
 	return [visit_dict[time] for time in uniq_time][-max_length:]
 
+
+"""
+line_to_visit_level input:
+	252 788 1759 788 166 344 930 166 147 1759 166 136 1076 1568 1076
+        74489 74489 74489 74608 74608 74608 74671 74671 74671 74671 74699 74699 74699 74783 74783
+	admission_lst \t timestamp_lst 
+
+"""
 def line_to_visit_level(line):
 	admissions = line.split('\t')[2]
 	admissions = [int(i) for i in admissions.split()]
@@ -36,6 +44,11 @@ def line_to_visit_level(line):
 	timestamp = [int(i) for i in timestamp.split()]
 	assert len(timestamp) == len(admissions)
 	return code_to_visit_level(admissions, timestamp)
+
+
+
+
+
 
 def lst_to_data(lst_lst):
 	lst_lst = lst_lst[-max_length:]
@@ -67,7 +80,7 @@ def label_1d_to_2d(label):
 
 class Create_Multihot_Data(object):
 	"""
-	create batch data
+	create batch data;  heart_failure data format
 	"""
 	def __init__(self, is_train = True, **config):
 		#self.max_length = max_length
@@ -83,6 +96,10 @@ class Create_Multihot_Data(object):
 		self.batch_num = int(np.ceil(self.total_num / self.batch_size))
 		self.batch_id = 0 
 		self.random_shuffle = np.arange(self.total_num)  ### no shuffle at first epoch 
+
+	@property
+	def data_lst_0(self):
+		return self.data_lst[0]
 
 	@property
 	def check_label(self):
@@ -118,6 +135,50 @@ def lst_to_multihot_vec(vec_size, lst):
 	vec = [1 if i in lst else 0 for i in range(vec_size)] 
 	return np.array(vec)
 '''
+
+class Create_Multihot_Data_MIMIC3(Create_Multihot_Data):
+	"""
+		Multihot, visit level; MIMIC3
+	"""
+	def __init__(self, is_train = True, **config):
+		self.__dict__.update(config)
+		assert config['separate_symbol_in_visit'] == ' '
+		assert config['separate_symbol_between_visit'] == ','
+		assert config['separate_symbol'] == '\t'
+		filename = self.train_file if is_train else self.test_file
+		with open(filename, 'r') as fin:
+			lines = fin.readlines()
+			self.label = list(map(
+						lambda x: int(x.split(self.separate_symbol)[3])
+							 , lines ))
+			self.data_lst = list(map(
+						self.line_2_lst2d
+							 , lines))	
+			del lines 
+
+		self.batch_id = 0 
+		self.random_shuffle = np.arange(self.total_num)  ### no shuffle at first epoch 
+
+	@property
+	def total_num(self):
+		return len(self.label)
+
+	@property
+	def batch_num(self):
+		return int(np.ceil(self.total_num / self.batch_size))
+
+	def line_2_lst2d(self, line):
+		#timelst = line.split(self.separate_symbol)[1]
+		#timelst = timelst.split(self.separate_symbol_between_visit)
+		seqlst = line.split(self.separate_symbol)[2]
+		seqlst = seqlst.split(self.separate_symbol_between_visit)
+		seqlst = seqlst[:self.max_length]
+		seqlst = [[int(i) for i in j.split(self.separate_symbol_in_visit)] for j in seqlst]
+		return seqlst
+
+
+
+
 class Create_Multihot_Dictionary_Data(Create_Multihot_Data):
 	#def __init__(self, fin, batch_size, admis_dim):
 	def __init__(self, is_train = True, **config):
@@ -246,8 +307,12 @@ class MNIST_Data:
 
 
 
+
+
+
 if __name__ == '__main__':
-	from config import get_multihot_rnn_config, get_multihot_dictionary_rnn_config, get_pearl_config, get_mnist_dictionary_config
+	from config import get_multihot_rnn_config, get_multihot_dictionary_rnn_config,\
+	 get_pearl_config, get_mnist_dictionary_config, get_multihot_rnn_MIMIC3_config
 	'''
 	### 1. Create_Multihot_Data
 	TrainData = Create_Multihot_Data(TrainFile, batch_size = batch_size)
@@ -274,12 +339,25 @@ if __name__ == '__main__':
 	'''
 
 	### 4. MNIST    
+	'''
 	config = get_mnist_dictionary_config()
 	TrainData = MNIST_Data(is_train = True, **config)
 	TestData = MNIST_Data(is_train = False, **config)
 	for i in range(100):
 		a, __ = TrainData.next()
 		print(a.max())
+	'''
+
+	
+	####  5. mimic
+	config = get_multihot_rnn_MIMIC3_config()
+	TrainData = Create_Multihot_Data_MIMIC3(is_train = True, **config)
+	for i in range(10000):
+		print(i)
+		data, data_len, label = TrainData.next()
+	#config = get_multihot_rnn_config()
+	#TrainData = Create_Multihot_Data(is_train = True, **config)
+	#print(TrainData.data_lst_0)
 
 
 

@@ -89,6 +89,30 @@ class MultihotRnnBase(object):
 		return self.sess.run([self.outputs_prob], \
 			feed_dict = {self.X:X, self.seqlen:seqlen})
 
+class Multihot_Rnn_Attention(MultihotRnnBase):
+	"""
+		single attention; scalar-level
+	"""
+	def __init__(self, **config):
+		self.__dict__.update(config)
+
+	def _build_rnn(self):
+		batch_size = tf.shape(self.X)[0] 
+		x_ = tf.unstack(value = self.X, num = self.max_length, axis = 1)
+		assert len(x_) == self.max_length
+		lstm_cell = tf.contrib.rnn.BasicLSTMCell(num_units = self.rnn_in_dim)
+		outputs, state = tf.contrib.rnn.static_rnn(inputs = x_, cell = lstm_cell,\
+		 dtype = tf.float32, sequence_length = self.seqlen)
+		assert len(outputs) == self.max_length
+		outputs = tf.stack(outputs, axis = 1)
+		index = tf.range(0, batch_size) * self.max_length + (self.seqlen - 1)
+		self.rnn_outputs = tf.gather(tf.reshape(outputs, [-1, self.rnn_in_dim]), index)
+
+	def _build_classify_loss(self):
+		self.classify_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=self.Y,logits=self.logits))
+
+		
+
 
 
 class Multihot_Rnn_Dictionary(MultihotRnnBase):
