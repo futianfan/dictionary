@@ -80,7 +80,7 @@ def label_1d_to_2d(label):
 
 class Create_Multihot_Data(object):
 	"""
-	create batch data;  heart_failure data format
+	create batch data;  heart_failure
 	"""
 	def __init__(self, is_train = True, **config):
 		#self.max_length = max_length
@@ -180,6 +180,9 @@ class Create_Multihot_Data_MIMIC3(Create_Multihot_Data):
 
 
 class Create_Multihot_Dictionary_Data(Create_Multihot_Data):
+	"""
+		Pytorch; multihot; dictionary, heart_failure
+	"""
 	#def __init__(self, fin, batch_size, admis_dim):
 	def __init__(self, is_train = True, **config):
 		Create_Multihot_Data.__init__(self, is_train, **config)
@@ -212,8 +215,12 @@ class Create_Multihot_Dictionary_Data(Create_Multihot_Data):
 		return data, data_lst1d_mat, batch_leng, label 
 
 
-class Create_TF_Multihot_Dictionary_Data(Create_Multihot_Dictionary_Data):
 
+
+class Create_TF_Multihot_Dictionary_Data(Create_Multihot_Dictionary_Data):
+	"""
+		tensorflow, multihot, dictionary, heart_failure
+	"""
 	def next(self):
 		data, label = Create_Multihot_Data.next0(self)
 
@@ -227,6 +234,13 @@ class Create_TF_Multihot_Dictionary_Data(Create_Multihot_Dictionary_Data):
 		data, batch_leng = batch_lst_to_data(data)
 		return data, batch_leng, label, data_lst1d_mat
 
+class Create_TF_Multihot_Dictionary_MIMIC(Create_TF_Multihot_Dictionary_Data, Create_Multihot_Data_MIMIC3):
+	"""
+		tensorflow, multihot, dictionary, MIMIC 
+	"""
+	def __init__(self, is_train = True, **config):
+		Create_Multihot_Data_MIMIC3.__init__(self, is_train, **config)
+		self.admis_dim = config['input_dim']
 
 
 

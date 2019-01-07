@@ -149,13 +149,13 @@ class Multihot_Rnn_Attention(MultihotRnnBase):
 
 
 
-		
+
 
 
 
 class Multihot_Rnn_Dictionary(MultihotRnnBase):
 	"""
-
+		TF; dictionary 
 	"""
 	def _build_placeholder(self):
 		MultihotRnnBase._build_placeholder(self)
@@ -239,6 +239,12 @@ class Multihot_Rnn_Dictionary(MultihotRnnBase):
 			feed_dict = {self.X:X, self.Y:Y_2d, self.seqlen:seqlen, self.X_recon:X_recon})
 		return classify_loss, reconstruction_loss, dictionary_loss 
 
+	def generation_prototype_patient(self):
+		"""
+			[1, 0, 0, 0]   [0, 1, 0, 0]   [0, 0, 1, 0],  [0, 0, 0, 1]
+		"""
+		
+		pass 
 
 
 

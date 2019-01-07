@@ -108,7 +108,7 @@ def train_multihot_Attention_rnn_MIMIC():
 
 
 
-def train_multihot_rnn_dictionary():
+def train_multihot_rnn_dictionary_HeartFailure():
 	from model_tf import Multihot_Rnn_Dictionary
 	from stream import Create_TF_Multihot_Dictionary_Data ### Create_Multihot_Data
 	from config import get_multihot_rnn_dictionary_TF_config
@@ -137,16 +137,48 @@ def train_multihot_rnn_dictionary():
 			total_classify_loss, total_recon_loss, total_dictionary_loss = 0.0, 0.0, 0.0
 
 
+def train_multihot_rnn_dictionary_MIMIC():
+	"""
+		feature + model + data 
+		multihot + dictionary + MIMIC 
+	"""
+	from model_tf import Multihot_Rnn_Dictionary
+	from stream import Create_TF_Multihot_Dictionary_MIMIC ## Create_TF_Multihot_Dictionary_Data ### Create_Multihot_Data
+	from config import get_multihot_rnn_dictionary_TF_MIMIC3_config  ## get_multihot_rnn_dictionary_TF_config
+
+	config = get_multihot_rnn_dictionary_TF_MIMIC3_config()
+	train_iter = config['train_iter']
+	TrainData = Create_TF_Multihot_Dictionary_MIMIC(is_train = True, **config)
+	TestData = Create_TF_Multihot_Dictionary_MIMIC(is_train = False, **config)
+
+	multihot_rnn_dictionary = Multihot_Rnn_Dictionary(**config)
+	batch_num = TrainData.num_of_iter_in_a_epoch
+	total_classify_loss, total_recon_loss, total_dictionary_loss = 0, 0, 0
+	for i in range(train_iter):
+		data, data_len, label, data_recon = TrainData.next()
+		classify_loss, recon_loss, dictionary_loss = multihot_rnn_dictionary.train(data, label, data_len, data_recon)
+		total_classify_loss += classify_loss
+		total_recon_loss += recon_loss
+		total_dictionary_loss += dictionary_loss
+		if i > 0 and i % batch_num == 0:
+			total_classify_loss /= batch_num
+			total_recon_loss /= batch_num
+			total_dictionary_loss /= batch_num
+			auc = test(multihot_rnn_dictionary, TestData)
+			print('classify Loss:{}, recon loss:{}, dictionary loss:{}, test AUC {}.'.format(
+				str(total_classify_loss)[:6], str(total_recon_loss)[:7], str(total_dictionary_loss)[:7], str(auc)[:6]))
+			total_classify_loss, total_recon_loss, total_dictionary_loss = 0.0, 0.0, 0.0
+
 
 
 
 
 if __name__ == '__main__':
 	#train_multihot_rnn()
-	#train_multihot_rnn_dictionary()
+	#train_multihot_rnn_dictionary_HeartFailure()
 	#train_multihot_rnn_MIMIC()
-	train_multihot_Attention_rnn_MIMIC()
-
+	#train_multihot_Attention_rnn_MIMIC()
+	train_multihot_rnn_dictionary_MIMIC()
 	
 
 

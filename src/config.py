@@ -157,9 +157,10 @@ def get_multihot_rnn_MIMIC3_config():
 	config['attention_size'] = 50 
 
 	config['data_folder'] = './data'
+
+	### MIMIC 3 
 	config['train_file'] = os.path.join(config['data_folder'], 'mimic_train')
 	config['test_file'] = os.path.join(config['data_folder'], 'mimic_test')
-
 	config['separate_symbol_in_visit'] = ' '
 	config['separate_symbol_between_visit'] = ','
 	config['separate_symbol'] = '\t'
@@ -214,5 +215,45 @@ def get_multihot_rnn_dictionary_TF_config():
 	config['dictionary_size'] = 10
 
 	return config 
+
+
+
+def get_multihot_rnn_dictionary_TF_MIMIC3_config():
+	config = {}
+	config['batch_size'] = 8
+	config['max_length'] = 5  ### 5 future work: try larger max-length  
+	config['input_dim'] = 1867
+	config['rnn_in_dim'] = 50
+	config['rnn_out_dim'] = 50
+	config['rnn_layer'] = 1
+	config['batch_first'] = True
+	config['num_class'] = 2
+	config['LR'] = 1e-2
+	config['test_num'] = 3358 
+	config['train_iter'] = int(2e6)
+
+	config['data_folder'] = './data'
+	config['train_file'] = os.path.join(config['data_folder'], 'training_data_1.txt')
+	config['test_file'] = os.path.join(config['data_folder'], 'test_data_1.txt')
+
+	config['eta1'] = 1e0	### dictionary
+	config['eta2'] = 1e-3	### reconstruction
+	config['eta3'] = 1		### classify
+	config['lambda1'] = 1e-3
+	config['lambda2'] = 1e-2	
+	config['dictionary_size'] = 10
+
+	### MIMIC 3 
+	config['train_file'] = os.path.join(config['data_folder'], 'mimic_train')
+	config['test_file'] = os.path.join(config['data_folder'], 'mimic_test')
+	config['separate_symbol_in_visit'] = ' '
+	config['separate_symbol_between_visit'] = ','
+	config['separate_symbol'] = '\t'
+	return config 
+
+
+
+
+
 
 
