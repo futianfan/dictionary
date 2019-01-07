@@ -95,6 +95,10 @@ class Multihot_Rnn_Attention(MultihotRnnBase):
 	"""
 	def __init__(self, **config):
 		self.__dict__.update(config)
+		### build model
+		self._build()
+		### session 
+		self._open_session()
 
 	def _build_rnn(self):
 		batch_size = tf.shape(self.X)[0] 
@@ -105,11 +109,45 @@ class Multihot_Rnn_Attention(MultihotRnnBase):
 		 dtype = tf.float32, sequence_length = self.seqlen)
 		assert len(outputs) == self.max_length
 		outputs = tf.stack(outputs, axis = 1)
-		index = tf.range(0, batch_size) * self.max_length + (self.seqlen - 1)
-		self.rnn_outputs = tf.gather(tf.reshape(outputs, [-1, self.rnn_in_dim]), index)
+		#index = tf.range(0, batch_size) * self.max_length + (self.seqlen - 1)
+		#self.rnn_outputs = tf.gather(tf.reshape(outputs, [-1, self.rnn_in_dim]), index)
+		_, self.rnn_outputs = self._build_attention(outputs, self.attention_size)
+
 
 	def _build_classify_loss(self):
 		self.classify_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=self.Y,logits=self.logits))
+
+
+
+	@staticmethod
+	def _build_attention(inputs, attention_size):
+		"""
+			input: B, T, D: batch_size, timestep, dimension
+			output: B, D
+			to do: variable-length? ********
+		"""
+
+		#dim = inputs.get_shape()[2] ### tf.shape wrong?
+		#dim = tf.shape(inputs)[2]
+		dim = inputs.shape[2].value
+		attention_weight = tf.Variable(tf.random_normal([dim, attention_size]))
+		attention_bias = tf.Variable(tf.random_normal([attention_size]))
+		attention_dot = tf.Variable(tf.zeros([attention_size]))
+
+		result_1 = tf.tanh(tf.tensordot(inputs, attention_weight, axes = 1) + attention_bias)  ### B, T, D_    D_ is attention_size
+		result_2 = tf.tensordot(result_1, attention_dot, axes = 1)  ### B, T
+		alpha = tf.nn.softmax(result_2)  ### B, T;  axis = -1
+
+		alpha_expand = tf.expand_dims(alpha, axis = -1)  ### B, T, 1
+		output = tf.multiply(inputs, alpha_expand)  ### B, T, D
+		output = tf.reduce_sum(output, axis = 1)	### B, D
+
+		return alpha, output 
+
+
+
+
+
 
 		
 

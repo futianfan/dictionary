@@ -80,6 +80,33 @@ def train_multihot_rnn_MIMIC():
 			total_loss = 0
 
 
+def train_multihot_Attention_rnn_MIMIC():
+	from model_tf import Multihot_Rnn_Attention
+	from stream import Create_Multihot_Data_MIMIC3
+	from config import get_multihot_rnn_MIMIC3_config
+
+	config = get_multihot_rnn_MIMIC3_config()	
+	train_iter = config['train_iter']
+	TrainData = Create_Multihot_Data_MIMIC3(is_train = True, **config)
+	TestData = Create_Multihot_Data_MIMIC3(is_train = False, **config)
+
+	multihot_rnn_base = Multihot_Rnn_Attention(**config)
+
+
+	batch_num = TrainData.num_of_iter_in_a_epoch
+	total_loss = 0
+	for i in range(train_iter):
+		## data 
+		data, data_len, label = TrainData.next()
+		## train & train loss
+		loss = multihot_rnn_base.train(data, label, data_len)
+		total_loss += loss 
+		if i > 0 and i % batch_num == 0:
+			auc = test(multihot_rnn_base, TestData)
+			print('Loss: {}, test AUC {}.'.format(total_loss / batch_num, auc))
+			total_loss = 0
+
+
 
 def train_multihot_rnn_dictionary():
 	from model_tf import Multihot_Rnn_Dictionary
@@ -117,8 +144,10 @@ def train_multihot_rnn_dictionary():
 if __name__ == '__main__':
 	#train_multihot_rnn()
 	#train_multihot_rnn_dictionary()
-	train_multihot_rnn_MIMIC()
+	#train_multihot_rnn_MIMIC()
+	train_multihot_Attention_rnn_MIMIC()
 
+	
 
 
 

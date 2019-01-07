@@ -138,6 +138,31 @@ def get_multihot_rnn_MIMIC3_config():
 	config['separate_symbol_between_visit'] = ','
 	config['separate_symbol'] = '\t'
 
+	return config 
+
+
+def get_multihot_rnn_MIMIC3_config():
+	config = {}
+	config['batch_size'] = 8
+	config['max_length'] = 5  ### 5 future work: try larger max-length  
+	config['input_dim'] = 1867
+	config['rnn_in_dim'] = 50
+	config['rnn_out_dim'] = 50
+	config['rnn_layer'] = 1
+	config['batch_first'] = True
+	config['num_class'] = 2
+	config['LR'] = 1e-1
+	config['test_num'] = 3358 
+	config['train_iter'] = int(1e4)
+	config['attention_size'] = 50 
+
+	config['data_folder'] = './data'
+	config['train_file'] = os.path.join(config['data_folder'], 'mimic_train')
+	config['test_file'] = os.path.join(config['data_folder'], 'mimic_test')
+
+	config['separate_symbol_in_visit'] = ' '
+	config['separate_symbol_between_visit'] = ','
+	config['separate_symbol'] = '\t'
 
 	return config 
 
