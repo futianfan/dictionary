@@ -12,15 +12,15 @@ TrainFile = 'training_data_1.txt'
 TestFile = 'test_data_1.txt'
 TrainFile = os.path.join(DataFolder, TrainFile)
 TestFile = os.path.join(DataFolder, TestFile)
-'''
 
 config = get_multihot_rnn_config()
 
 max_length = config['max_length']
 admis_dim = config['input_dim']
-batch_size = config['batch_size']
+'''
 
 
+'''
 def code_to_visit_level(admissions, timestamp):
 	uniq_time = list(set(timestamp))
 	uniq_time.sort()
@@ -47,10 +47,6 @@ def line_to_visit_level(line):
 	return code_to_visit_level(admissions, timestamp)
 
 
-
-
-
-
 def lst_to_data(lst_lst):
 	lst_lst = lst_lst[-max_length:]
 	leng = len(lst_lst)
@@ -69,14 +65,7 @@ def batch_lst_to_data(batch_lst_lst):
 	for i in range(batch_size):
 		datamat = np.concatenate([datamat, batch_datamat[i].reshape(1,x,y)], 0) if i > 0 else batch_datamat[i].reshape(1,x,y)
 	return datamat, batch_leng
-
-def label_1d_to_2d(label):
-	leng = len(label)
-	class_num = 2
-	label_2d = np.zeros((leng, class_num))
-	for i in range(leng):
-		label_2d[i, label[i]] = 1
-	return label_2d
+'''
 
 
 class Create_Multihot_Data(object):
@@ -87,10 +76,12 @@ class Create_Multihot_Data(object):
 		#self.max_length = max_length
 		filename = config['train_file'] if is_train else config['test_file']
 		batch_size = config['batch_size']
+		self.admis_dim = config['input_dim']
+		self.max_length = config['max_length']		
 		with open(filename, 'r') as fin:
 			lines = fin.readlines()[1:]
 			self.label = list(map(lambda x: 1 if x.split('\t')[0] == 'True' else 0, lines ))
-			self.data_lst = list(map(line_to_visit_level, lines))
+			self.data_lst = list(map(self.line_to_visit_level, lines))
 			del lines
 		self.batch_size = batch_size
 		self.total_num = len(self.label)
@@ -129,8 +120,59 @@ class Create_Multihot_Data(object):
 
 	def next(self):
 		data, label = self.next0()
-		data, batch_leng = batch_lst_to_data(data)
+		data, batch_leng = self.batch_lst_to_data(data)
 		return data, batch_leng, label ### data:numpy array;  label is list
+
+
+
+	def code_to_visit_level(self, admissions, timestamp):
+		uniq_time = list(set(timestamp))
+		uniq_time.sort()
+		visit_dict = {time: [] for time in uniq_time}
+		for idx, adm in enumerate(admissions):
+			time = timestamp[idx]
+			visit_dict[time].append(adm)
+		return [visit_dict[time] for time in uniq_time][-self.max_length:]
+
+	"""
+		line_to_visit_level input:
+		252 788 1759 788 166 344 930 166 147 1759 166 136 1076 1568 1076
+    	    74489 74489 74489 74608 74608 74608 74671 74671 74671 74671 74699 74699 74699 74783 74783
+		admission_lst \t timestamp_lst 
+	"""
+
+	def line_to_visit_level(self, line):
+		admissions = line.split('\t')[2]
+		admissions = [int(i) for i in admissions.split()]
+		timestamp = line.split('\t')[3]
+		timestamp = [int(i) for i in timestamp.split()]
+		assert len(timestamp) == len(admissions)
+		return self.code_to_visit_level(admissions, timestamp)
+
+	def lst_to_data(self, lst_lst):
+		lst_lst = lst_lst[-self.max_length:]
+		leng = len(lst_lst)
+		datamat = np.zeros((self.max_length, self.admis_dim))
+		for i in range(leng):
+			for j in lst_lst[i]:
+				datamat[i,j] = 1
+		return datamat, leng
+
+
+	def batch_lst_to_data(self, batch_lst_lst):
+		batch_datamat = list(map(self.lst_to_data, batch_lst_lst))
+		batch_leng = [i[1] for i in batch_datamat]
+		batch_datamat = [i[0] for i in batch_datamat]
+		batch_size = len(batch_datamat)
+		x,y = batch_datamat[0].shape
+		for i in range(batch_size):
+			datamat = np.concatenate([datamat, batch_datamat[i].reshape(1,x,y)], 0) if i > 0 else batch_datamat[i].reshape(1,x,y)
+		return datamat, batch_leng
+
+
+
+
+
 '''
 def lst_to_multihot_vec(vec_size, lst):
 	vec = [1 if i in lst else 0 for i in range(vec_size)] 
@@ -143,6 +185,7 @@ class Create_Multihot_Data_MIMIC3(Create_Multihot_Data):
 	"""
 	def __init__(self, is_train = True, **config):
 		self.__dict__.update(config)
+		self.admis_dim = config['input_dim']		
 		assert config['separate_symbol_in_visit'] == ' '
 		assert config['separate_symbol_between_visit'] == ','
 		assert config['separate_symbol'] == '\t'
@@ -212,7 +255,7 @@ class Create_Multihot_Dictionary_Data(Create_Multihot_Data):
 		data_lst1d_mat = np.concatenate(data_lst1d_mat, axis = 0) 
 		data_lst1d_mat = Variable(torch.FloatTensor(data_lst1d_mat))
 
-		data, batch_leng = batch_lst_to_data(data)
+		data, batch_leng = self.batch_lst_to_data(data)
 		return data, data_lst1d_mat, batch_leng, label 
 
 
@@ -232,7 +275,7 @@ class Create_TF_Multihot_Dictionary_Data(Create_Multihot_Dictionary_Data):
 		data_lst1d_mat = [i.reshape(1,-1) for i in data_lst1d_mat]
 		data_lst1d_mat = np.concatenate(data_lst1d_mat, axis = 0) 
 
-		data, batch_leng = batch_lst_to_data(data)
+		data, batch_leng = self.batch_lst_to_data(data)
 		return data, batch_leng, label, data_lst1d_mat
 
 class Create_TF_Multihot_Dictionary_MIMIC(Create_TF_Multihot_Dictionary_Data, Create_Multihot_Data_MIMIC3):
