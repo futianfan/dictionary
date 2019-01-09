@@ -10,10 +10,20 @@ def interpret_mimic():
 	fin = open(config['mapfile'], 'r')
 	code_map = fin.readlines()
 	code_map = [line.rstrip() for line in code_map]
+	code_num = len(code_map)
+	dictionary_size, _ = mat.shape
 
-	assert len(code_map) == mat.shape[1]
-
-
+	### return the top-k
+	topk = 15
+	fout = open(config['prototype_text'], 'w')
+	for i in range(dictionary_size):
+		vec = mat[i,:code_num]
+		topk_ele = list((-vec).argsort())[:topk]
+		topk_ele = [code_map[i] for i in topk_ele]
+		topk_ele = '; '.join(topk_ele)
+		fout.write('Prototype Patient_' + str(i) + ": ")
+		fout.write(topk_ele + '\n')
+	fout.close()
 
 
 if __name__ == '__main__':

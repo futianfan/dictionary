@@ -206,10 +206,11 @@ def get_multihot_rnn_dictionary_TF_config():
 	config['data_folder'] = './data'
 	config['train_file'] = os.path.join(config['data_folder'], 'training_data_1.txt')  ### heart-failure
 	config['test_file'] = os.path.join(config['data_folder'], 'test_data_1.txt')
-	config['mapfile'] = os.path.join(config['data_folder'], 'SNOW_vocabMAP.txt')
+	config['mapfile'] = os.path.join(config['data_folder'], 'heartfailure_code_map.txt')
 
 	config['result_folder'] = './result'
-	config['prototype_npy'] = os.path.join(config['result_folder'], 'heartfailure_prototoye.npy')
+	config['prototype_npy'] = os.path.join(config['result_folder'], 'heartfailure_prototype.npy')
+	config['prototype_text'] = os.path.join(config['result_folder'], 'heartfailure_prototype_topk')
 
 
 	config['eta1'] = 1e0	### dictionary
@@ -241,7 +242,8 @@ def get_multihot_rnn_dictionary_TF_MIMIC3_config():
 	config['data_folder'] = './data'
 
 	config['result_folder'] = './result'
-	config['prototype_npy'] = os.path.join(config['result_folder'], 'mimic_prototoye.npy')
+	config['prototype_npy'] = os.path.join(config['result_folder'], 'mimic_prototype.npy')
+	config['prototype_text'] = os.path.join(config['result_folder'], 'mimic_prototype_topk')
 
 
 	config['eta1'] = 1e0	### dictionary
@@ -254,12 +256,13 @@ def get_multihot_rnn_dictionary_TF_MIMIC3_config():
 	### MIMIC 3 
 	config['train_file'] = os.path.join(config['data_folder'], 'mimic_train')
 	config['test_file'] = os.path.join(config['data_folder'], 'mimic_test')
-	config['mapfile'] = os.path.join(config['data_folder'], 'code_map.txt')
+	config['mapfile'] = os.path.join(config['data_folder'], 'mimic_code_map.txt')
 
 	config['separate_symbol_in_visit'] = ' '
 	config['separate_symbol_between_visit'] = ','
 	config['separate_symbol'] = '\t'
 	return config 
+
 
 
 
