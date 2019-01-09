@@ -161,6 +161,9 @@ class Multihot_Rnn_Dictionary(MultihotRnnBase):
 		MultihotRnnBase._build_placeholder(self)
 		self.X_recon = tf.placeholder(dtype = tf.float32, shape = [None, self.input_dim])
 
+		####  generation_prototype_patient
+		self.prototype_vec = tf.placeholder(dtype = tf.float32, shape = [None, self.dictionary_size])
+
 	def _build_dictionary(self): 
 		### forward
 		self.dictionary_matrix = tf.Variable(tf.random_normal(
@@ -179,7 +182,7 @@ class Multihot_Rnn_Dictionary(MultihotRnnBase):
 			)  #### batch_size, dictionary_size 
 		self.sparse_code = tf.maximum(self.sparse_code_1 - self.lambda1, 0)
 
-		### loss
+		### loss 
 		self.dictionary_loss = (tf.norm(self.rnn_outputs - 
 								tf.matmul(self.sparse_code, tf.transpose(self.dictionary_matrix, perm = [1,0]))
 							))**2 \
@@ -197,11 +200,24 @@ class Multihot_Rnn_Dictionary(MultihotRnnBase):
 				shape = [self.input_dim],
 				dtype = tf.float32
 			))   
-		self.output_recon =  tf.matmul(self.ssf, self.weight_reconstruction) + self.bias_reconstruction ### tf.sigmoid() 
+		self.output_recon = tf.matmul(self.ssf, self.weight_reconstruction) + self.bias_reconstruction ### tf.sigmoid() 
 		### loss 
 		self.reconstruction_loss0 = tf.nn.sigmoid_cross_entropy_with_logits(labels=self.X_recon,logits=self.output_recon)
 		self.reconstruction_loss1 = tf.reduce_sum(self.reconstruction_loss0, axis = 1)
 		self.reconstruction_loss = tf.reduce_mean(self.reconstruction_loss1)
+
+	def _build_sparse_code_as_input(self):
+		self.sparse_code_normalized = tf.nn.l2_normalize(self.prototype_vec, axis = 1)
+		self.ssf = tf.matmul(self.sparse_code_normalized, tf.transpose(self.dictionary_matrix, perm = [1,0]))
+		self.weight_reconstruction = tf.Variable(tf.random_normal(
+				shape = [self.rnn_in_dim, self.input_dim], 
+				dtype = tf.float32))
+		self.bias_reconstruction = tf.Variable(tf.zeros(
+				shape = [self.input_dim],
+				dtype = tf.float32
+			))   
+		self.output_recon = tf.matmul(self.ssf, self.weight_reconstruction) + self.bias_reconstruction ### tf.sigmoid() 
+		### loss 		
 
 	def _build(self):
 		### placeholder 
@@ -222,6 +238,7 @@ class Multihot_Rnn_Dictionary(MultihotRnnBase):
 
 		### III: reconstruction module
 		self._build_reconstruction()
+		self._build_sparse_code_as_input()
 
 		### total loss 
 		self.total_loss = self.eta1 * self.dictionary_loss \
@@ -243,8 +260,11 @@ class Multihot_Rnn_Dictionary(MultihotRnnBase):
 		"""
 			[1, 0, 0, 0]   [0, 1, 0, 0]   [0, 0, 1, 0],  [0, 0, 0, 1]
 		"""
-		
-		pass 
+		prototype_vec = np.eye(self.dictionary_size)
+		output = self.sess.run([self.output_recon], 
+								feed_dict = {self.prototype_vec:prototype_vec})
+		output = output[0]
+		return output
 
 
 

@@ -109,6 +109,9 @@ def train_multihot_Attention_rnn_MIMIC():
 
 
 def train_multihot_rnn_dictionary_HeartFailure():
+	"""
+		multihot + dictionary + heart-failure  
+	"""
 	from model_tf import Multihot_Rnn_Dictionary
 	from stream import Create_TF_Multihot_Dictionary_Data ### Create_Multihot_Data
 	from config import get_multihot_rnn_dictionary_TF_config
@@ -136,6 +139,8 @@ def train_multihot_rnn_dictionary_HeartFailure():
 				str(total_classify_loss)[:6], str(total_recon_loss)[:7], str(total_dictionary_loss)[:7], str(auc)[:6]))
 			total_classify_loss, total_recon_loss, total_dictionary_loss = 0.0, 0.0, 0.0
 
+	output = multihot_rnn_dictionary.generation_prototype_patient()
+	np.save(config['prototype_npy'], output)
 
 def train_multihot_rnn_dictionary_MIMIC():
 	"""
@@ -168,6 +173,8 @@ def train_multihot_rnn_dictionary_MIMIC():
 			print('classify Loss:{}, recon loss:{}, dictionary loss:{}, test AUC {}.'.format(
 				str(total_classify_loss)[:6], str(total_recon_loss)[:7], str(total_dictionary_loss)[:7], str(auc)[:6]))
 			total_classify_loss, total_recon_loss, total_dictionary_loss = 0.0, 0.0, 0.0
+	output = multihot_rnn_dictionary.generation_prototype_patient()
+	np.save(config['prototype_npy'], output)
 
 
 
@@ -175,10 +182,10 @@ def train_multihot_rnn_dictionary_MIMIC():
 
 if __name__ == '__main__':
 	#train_multihot_rnn()
-	#train_multihot_rnn_dictionary_HeartFailure()
+	train_multihot_rnn_dictionary_HeartFailure()
 	#train_multihot_rnn_MIMIC()
 	#train_multihot_Attention_rnn_MIMIC()
-	train_multihot_rnn_dictionary_MIMIC()
+	#train_multihot_rnn_dictionary_MIMIC()
 	
 
 

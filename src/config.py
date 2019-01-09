@@ -120,7 +120,7 @@ def get_multihot_rnn_MIMIC3_config():
 	config = {}
 	config['batch_size'] = 8
 	config['max_length'] = 5  ### 5 future work: try larger max-length  
-	config['input_dim'] = 1867
+	config['input_dim'] = 942
 	config['rnn_in_dim'] = 50
 	config['rnn_out_dim'] = 50
 	config['rnn_layer'] = 1
@@ -145,7 +145,7 @@ def get_multihot_rnn_MIMIC3_config():
 	config = {}
 	config['batch_size'] = 8
 	config['max_length'] = 5  ### 5 future work: try larger max-length  
-	config['input_dim'] = 1867
+	config['input_dim'] = 942
 	config['rnn_in_dim'] = 50
 	config['rnn_out_dim'] = 50
 	config['rnn_layer'] = 1
@@ -204,8 +204,12 @@ def get_multihot_rnn_dictionary_TF_config():
 	config['train_iter'] = int(2e6)
 
 	config['data_folder'] = './data'
-	config['train_file'] = os.path.join(config['data_folder'], 'training_data_1.txt')
+	config['train_file'] = os.path.join(config['data_folder'], 'training_data_1.txt')  ### heart-failure
 	config['test_file'] = os.path.join(config['data_folder'], 'test_data_1.txt')
+
+	config['result_folder'] = './result'
+	config['prototype_npy'] = os.path.join(config['result_folder'], 'heartfailure_prototoye.npy')
+
 
 	config['eta1'] = 1e0	### dictionary
 	config['eta2'] = 1e-3	### reconstruction
@@ -222,7 +226,7 @@ def get_multihot_rnn_dictionary_TF_MIMIC3_config():
 	config = {}
 	config['batch_size'] = 8
 	config['max_length'] = 5  ### 5 future work: try larger max-length  
-	config['input_dim'] = 1867
+	config['input_dim'] = 942
 	config['rnn_in_dim'] = 50
 	config['rnn_out_dim'] = 50
 	config['rnn_layer'] = 1
@@ -230,11 +234,14 @@ def get_multihot_rnn_dictionary_TF_MIMIC3_config():
 	config['num_class'] = 2
 	config['LR'] = 1e-2
 	config['test_num'] = 3358 
-	config['train_iter'] = int(2e6)
+	config['train_iter'] = int(1e3)  
+	### batch_size=8 => 1680 iter <=> 1 epoch 
 
 	config['data_folder'] = './data'
-	config['train_file'] = os.path.join(config['data_folder'], 'training_data_1.txt')
-	config['test_file'] = os.path.join(config['data_folder'], 'test_data_1.txt')
+
+	config['result_folder'] = './result'
+	config['prototype_npy'] = os.path.join(config['result_folder'], 'mimic_prototoye.npy')
+
 
 	config['eta1'] = 1e0	### dictionary
 	config['eta2'] = 1e-3	### reconstruction

@@ -5,13 +5,14 @@ import torch
 import struct, gzip 
 from config import get_multihot_rnn_config
 
+
+'''
 DataFolder = './data'
 TrainFile = 'training_data_1.txt'
 TestFile = 'test_data_1.txt'
-
 TrainFile = os.path.join(DataFolder, TrainFile)
 TestFile = os.path.join(DataFolder, TestFile)
-
+'''
 
 config = get_multihot_rnn_config()
 
