@@ -7,6 +7,7 @@ __all__ = [
 	'MultihotRnnBase',
 	'Multihot_Rnn_Dictionary',
 ]
+tf.set_random_seed(5)   ### 3, 
 
 
 def _1dlabel_to_2dlabel(batch_label):

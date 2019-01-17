@@ -234,9 +234,9 @@ def get_multihot_rnn_dictionary_TF_MIMIC3_config():
 	config['rnn_layer'] = 1
 	config['batch_first'] = True
 	config['num_class'] = 2
-	config['LR'] = 1e-2
+	config['LR'] = 1e-1
 	config['test_num'] = 3358 
-	config['train_iter'] = int(3e4)  
+	config['train_iter'] = int(9e4)   ### 3e4  
 	### batch_size=8 => 1680 iter <=> 1 epoch 
 
 	config['data_folder'] = './data'
@@ -265,7 +265,46 @@ def get_multihot_rnn_dictionary_TF_MIMIC3_config():
 
 
 
+def get_multihot_rnn_dictionary_TF_truven_config():
+	config = {}
+	config['batch_size'] = 8
+	config['max_length'] = 20   
+	config['rnn_in_dim'] = 50
+	config['rnn_out_dim'] = 50
+	config['rnn_layer'] = 1
+	config['batch_first'] = True
+	config['num_class'] = 2
+	config['LR'] = 1e-1
+	config['test_num'] = 3358 
+	config['train_iter'] = int(9e4)   ### 3e4  
+	### batch_size=8 => 1680 iter <=> 1 epoch 
 
+	config['data_folder'] = './data'
+
+	config['result_folder'] = './result'
+	config['prototype_npy'] = os.path.join(config['result_folder'], 'truven_prototype.npy')
+	config['prototype_text'] = os.path.join(config['result_folder'], 'truven_prototype_topk')
+
+
+	config['eta1'] = 1e0	### dictionary
+	config['eta2'] = 1e-3	### reconstruction
+	config['eta3'] = 1		### classify
+	config['lambda1'] = 1e-3
+	config['lambda2'] = 1e-2	
+	config['dictionary_size'] = 10
+
+	### MIMIC 3 
+	config['train_file'] = os.path.join(config['data_folder'], 'truven_5k')
+	config['test_file'] = os.path.join(config['data_folder'], 'truven_1k')
+	config['mapfile'] = os.path.join(config['data_folder'], 'truven_code2idx')
+
+	lines = open(config['mapfile'], 'r').readlines()
+	config['input_dim'] = len(lines)
+
+	config['separate_symbol_in_visit'] = ' '
+	config['separate_symbol_between_visit'] = ';'
+	config['separate_symbol'] = '\t'
+	return config 
 
 
 

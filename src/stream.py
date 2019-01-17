@@ -170,7 +170,47 @@ class Create_Multihot_Data(object):
 		return datamat, batch_leng
 
 
-
+class Create_truven(object):
+	"""
+		truven
+			1. multihot feature list of list
+			2. multihot label: list
+			3. multihot reconstruction feature: aggregate feature
+	"""
+	def __init__(self, is_train = True, **config):
+		
+		self.is_train = is_train
+		filename = config['train_file'] if is_train else config['test_file']
+		batch_size = config['batch_size']
+		self.admis_dim = config['input_dim']
+		self.max_length = config['max_length']		
+		with open(filename, 'r') as fin:
+			lines = fin.readlines()
+			f1 = lambda x:[int(i) for i in x.rstrip().split(';')[-1].split(' ')]
+			self.label = list(map(f1, lines))
+			f2 = lambda x:[[int(j) for j in i.split(' ')] for i in x.rstrip().split(';')[:-1]]
+			self.data_lst = list(map(f2, lines))
+			self.data_lst_len = list(map(lambda x:len(x), self.data_lst))
+			add = lambda x,y:x+y
+			from functools import reduce
+			f3 = lambda x:list(set(reduce(add,x)))
+			self.data_decoder = list(map(f3, self.data_lst))
+			del lines
+		self.batch_size = batch_size
+		self.total_num = len(self.label)
+		self.batch_num = int(np.ceil(self.total_num / self.batch_size))
+		self.batch_id = 0 
+		self.random_shuffle = np.arange(self.total_num)  ### no shuffle at first epoch 
+		
+	
+	def next(self):
+		bgn = self.batch_id * self.batch_size
+		endn = bgn + self.batch_size
+		self.batch_id += 1
+		if self.batch_id > self.batch_num - 1:
+			self.batch_id = 0
+		return self.label[bgn:endn], self.data_lst[bgn:endn], self.data_lst_len[bgn:endn], self.data_decoder[bgn:endn]
+	
 
 
 '''
@@ -370,7 +410,8 @@ class MNIST_Data:
 
 if __name__ == '__main__':
 	from config import get_multihot_rnn_config, get_multihot_dictionary_rnn_config,\
-	 get_pearl_config, get_mnist_dictionary_config, get_multihot_rnn_MIMIC3_config
+	 get_pearl_config, get_mnist_dictionary_config, get_multihot_rnn_MIMIC3_config,\
+	 get_multihot_rnn_dictionary_TF_truven_config
 	'''
 	### 1. Create_Multihot_Data
 	TrainData = Create_Multihot_Data(TrainFile, batch_size = batch_size)
@@ -408,14 +449,29 @@ if __name__ == '__main__':
 
 	
 	####  5. mimic
+	'''
 	config = get_multihot_rnn_MIMIC3_config()
 	TrainData = Create_Multihot_Data_MIMIC3(is_train = True, **config)
 	for i in range(10000):
 		print(i)
 		data, data_len, label = TrainData.next()
+	'''
 	#config = get_multihot_rnn_config()
 	#TrainData = Create_Multihot_Data(is_train = True, **config)
 	#print(TrainData.data_lst_0)
+
+	#### 6. truven
+	
+	config = get_multihot_rnn_dictionary_TF_truven_config()
+	assert isinstance(config, dict)
+	TrainData = Create_truven(is_train = True, **config)
+	
+	for i in range(1):
+		label, data_lst, data_lst_len, data_decoder = TrainData.next()
+		print(label[0])
+		print(data_lst[0])
+		print(data_decoder[0])
+
 
 
 

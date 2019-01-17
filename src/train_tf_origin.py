@@ -182,10 +182,10 @@ def train_multihot_rnn_dictionary_MIMIC():
 
 if __name__ == '__main__':
 	#train_multihot_rnn()
-	train_multihot_rnn_dictionary_HeartFailure()
+	#train_multihot_rnn_dictionary_HeartFailure()
 	#train_multihot_rnn_MIMIC()
 	#train_multihot_Attention_rnn_MIMIC()
-	#train_multihot_rnn_dictionary_MIMIC()
+	train_multihot_rnn_dictionary_MIMIC()
 	
 
 
