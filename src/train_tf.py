@@ -62,6 +62,51 @@ class LearningBase:
 			predict_all.extend(output_prob)
 		return roc_auc_score(label_all, predict_all)
 
+class LearningBase_truven(LearningBase):
+	def __init__(self, config_fn, data_fn, model_fn):
+		LearningBase.__init__(self, config_fn, data_fn, model_fn)
+		self.topk = self.config['topk']
+
+	def train(self):
+		batch_num = self.TrainData.num_of_iter_in_a_epoch
+		total_loss, epoch, total_time = 0.0, 1, 0.0 
+		for i in range(self.train_iter):
+			t1 = time()
+			data, data_len, label = self.TrainData.next()
+			loss = self.model.train(data, label, data_len)
+			total_time += time() - t1
+			total_loss += loss 
+			if i >= 0 and i % batch_num == 0:
+				recall = self.test()
+				print('Epoch {}, Loss: {}, test-recall: {} time: {} sec'.format(
+					epoch, 
+					str(total_loss / batch_num)[:5], 
+					str(recall)[:6],
+					str(total_time)[:5]))
+				epoch += 1
+				total_time, total_loss = 0.0, 0.0
+
+	def test(self):
+		batch_num = self.TestData.num_of_iter_in_a_epoch
+		label_all = []
+		predict_all = [] 
+		total_label_number = 0
+		total_correct_number = 0
+		for i in range(batch_num):
+			next_data = self.TestData.next()
+			data, data_len, label = next_data[0], next_data[1], next_data[2]
+			output_prob = self.model.evaluate(data, data_len)
+			output_prob = output_prob[0]
+			prediction = [list(i[-self.topk:]) for i in np.argsort(output_prob,1)]
+			bs = len(label)
+			for j in range(bs):
+				true_label = set(label[j])
+				predict_label = set(prediction[j])
+				total_label_number += len(true_label)
+				total_correct_number += len(true_label.intersection(predict_label))
+		return total_correct_number / total_label_number
+
+
 
 class LearningDictionary(LearningBase):
 	"""
@@ -130,15 +175,22 @@ if __name__ == "__main__":
 	learn_base.train()
 	'''
 
+	#### Truven; multihot-RNN; next-visit prediction
+	from config import get_multihot_rnn_dictionary_TF_truven_config as config_fn
+	from stream import Create_truven as data_fn	
+	from model_tf import Multihot_Rnn_next_visit as model_fn
+	learn_base = LearningBase_truven(config_fn, data_fn, model_fn)
+	learn_base.train()
+
 
 	#### MIMIC; multihot-RETAIN
-	
+	'''
 	from config import get_multihot_rnn_MIMIC3_config as config_fn
 	from stream import Create_Multihot_Data_MIMIC3 as data_fn	
 	from model_tf import Multihot_Rnn_Attention as model_fn
 	learn_base = LearningBase(config_fn, data_fn, model_fn)
 	learn_base.train()
-	
+	'''
 
 
 	#### HeartFailure; multihot-dictionary
@@ -158,7 +210,6 @@ if __name__ == "__main__":
 	learn_base = LearningDictionary(config_fn, data_fn, model_fn)
 	learn_base.train()
 	'''
-
 
 
 

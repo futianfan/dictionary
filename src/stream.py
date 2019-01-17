@@ -4,6 +4,7 @@ from torch.autograd import Variable
 import torch 
 import struct, gzip 
 from config import get_multihot_rnn_config
+from functools import reduce
 
 
 '''
@@ -170,47 +171,6 @@ class Create_Multihot_Data(object):
 		return datamat, batch_leng
 
 
-class Create_truven(object):
-	"""
-		truven
-			1. multihot feature list of list
-			2. multihot label: list
-			3. multihot reconstruction feature: aggregate feature
-	"""
-	def __init__(self, is_train = True, **config):
-		
-		self.is_train = is_train
-		filename = config['train_file'] if is_train else config['test_file']
-		batch_size = config['batch_size']
-		self.admis_dim = config['input_dim']
-		self.max_length = config['max_length']		
-		with open(filename, 'r') as fin:
-			lines = fin.readlines()
-			f1 = lambda x:[int(i) for i in x.rstrip().split(';')[-1].split(' ')]
-			self.label = list(map(f1, lines))
-			f2 = lambda x:[[int(j) for j in i.split(' ')] for i in x.rstrip().split(';')[:-1]]
-			self.data_lst = list(map(f2, lines))
-			self.data_lst_len = list(map(lambda x:len(x), self.data_lst))
-			add = lambda x,y:x+y
-			from functools import reduce
-			f3 = lambda x:list(set(reduce(add,x)))
-			self.data_decoder = list(map(f3, self.data_lst))
-			del lines
-		self.batch_size = batch_size
-		self.total_num = len(self.label)
-		self.batch_num = int(np.ceil(self.total_num / self.batch_size))
-		self.batch_id = 0 
-		self.random_shuffle = np.arange(self.total_num)  ### no shuffle at first epoch 
-		
-	
-	def next(self):
-		bgn = self.batch_id * self.batch_size
-		endn = bgn + self.batch_size
-		self.batch_id += 1
-		if self.batch_id > self.batch_num - 1:
-			self.batch_id = 0
-		return self.label[bgn:endn], self.data_lst[bgn:endn], self.data_lst_len[bgn:endn], self.data_decoder[bgn:endn]
-	
 
 
 '''
@@ -325,6 +285,62 @@ class Create_TF_Multihot_Dictionary_MIMIC(Create_TF_Multihot_Dictionary_Data, Cr
 	def __init__(self, is_train = True, **config):
 		Create_Multihot_Data_MIMIC3.__init__(self, is_train, **config)
 		self.admis_dim = config['input_dim']
+
+
+
+class Create_truven(Create_TF_Multihot_Dictionary_Data):
+	"""
+		tensorflow 
+		truven
+			1. multihot feature list of list
+			2. multihot label: list
+			3. multihot reconstruction feature: aggregate feature
+	"""
+	def __init__(self, is_train = True, **config):
+		self.is_train = is_train
+		filename = config['train_file'] if is_train else config['test_file']
+		batch_size = config['batch_size']
+		self.admis_dim = config['input_dim']
+		self.max_length = config['max_length']		
+		with open(filename, 'r') as fin:
+			lines = fin.readlines()
+			f1 = lambda x:[int(i) for i in x.rstrip().split(';')[-1].split(' ')]
+			self.label = list(map(f1, lines))
+			f2 = lambda x:[[int(j) for j in i.split(' ')] for i in x.rstrip().split(';')[:-1]]
+			self.data_lst = list(map(f2, lines))
+			self.data_lst_len = list(map(lambda x:len(x), self.data_lst))
+			add = lambda x,y:x+y
+			from functools import reduce
+			f3 = lambda x:list(set(reduce(add,x)))
+			self.data_lst1d = list(map(f3, self.data_lst))
+			del lines
+		self.batch_size = batch_size
+		self.total_num = len(self.label)
+		self.batch_num = int(np.ceil(self.total_num / self.batch_size))
+		self.batch_id = 0 
+		self.random_shuffle = np.arange(self.total_num)  ### no shuffle at first epoch 
+		
+	
+	def next(self):
+		bgn = self.batch_id * self.batch_size
+		endn = bgn + self.batch_size
+		self.batch_id += 1
+		if self.batch_id > self.batch_num - 1:
+			self.batch_id = 0
+
+		data = self.data_lst[bgn:endn]
+		f = lambda line: reduce(lambda x,y: x+y, line)
+		data_lst1d = list((map(f,data)))
+		data_lst1d_mat = list(map(self.lst_to_multihot_vec, data_lst1d))
+		data_lst1d_mat = [i.reshape(1,-1) for i in data_lst1d_mat]
+		data_lst1d_mat = np.concatenate(data_lst1d_mat, axis = 0) 
+
+		data, batch_leng = self.batch_lst_to_data(data)
+
+		return data, batch_leng, self.label[bgn:endn]
+		##return self.label[bgn:endn], data, batch_leng, data_lst1d_mat
+		## self.data_lst[bgn:endn], self.data_lst_len[bgn:endn], self.data_lst1d[bgn:endn]
+	
 
 
 
@@ -466,11 +482,12 @@ if __name__ == '__main__':
 	assert isinstance(config, dict)
 	TrainData = Create_truven(is_train = True, **config)
 	
-	for i in range(1):
+	for i in range(16):
 		label, data_lst, data_lst_len, data_decoder = TrainData.next()
 		print(label[0])
-		print(data_lst[0])
-		print(data_decoder[0])
+		#print(data_lst_len)
+		#print(data_lst.shape)
+		#print(data_decoder.shape)
 
 
 

@@ -90,6 +90,53 @@ class MultihotRnnBase(object):
 		return self.sess.run([self.outputs_prob], \
 			feed_dict = {self.X:X, self.seqlen:seqlen})
 
+
+class Multihot_Rnn_next_visit(MultihotRnnBase):
+	"""
+		Truven data, rnn-next-visit
+	"""
+	def _build_classify_loss(self):
+		self.classify_loss = tf.reduce_mean(tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(
+			labels=self.Y,
+			logits=self.logits), 1))
+
+
+	### build model
+	def _build(self):
+		### placeholder
+		self._build_placeholder()
+		### forward: rnn
+		self._build_rnn()   ###  self.rnn_outputs
+		### forward: full-connect
+		weight = tf.Variable(tf.random_normal(shape = [self.rnn_in_dim, self.num_class]))
+		bias = tf.Variable(tf.zeros(shape = [self.num_class]))
+		self.logits = tf.matmul(self.rnn_outputs, weight) + bias  ### BS,c 
+		self.outputs_prob = tf.nn.sigmoid(self.logits)
+		### loss 
+		self._build_classify_loss() 
+		### train_op
+		self.train_fn = tf.train.GradientDescentOptimizer(learning_rate=self.LR).minimize(self.classify_loss)
+		#acc_fn = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(Y, 1), tf.argmax(y_pred, 1)), tf.float32))
+
+	def _1dlabel_to_2dlabel(self, batch_label):
+		'''
+			batch_label is list of list. element is integer
+		'''
+		batch_size = len(batch_label)
+		label_2d = np.zeros((batch_size, self.num_class),dtype = int)
+		for i in range(batch_size):
+			for j in batch_label:
+				label_2d[i,j] = 1 
+		return label_2d
+
+	def train(self, X, Y_1d, seqlen):
+		Y_2d = self._1dlabel_to_2dlabel(Y_1d)
+		loss, _ = self.sess.run([self.classify_loss, self.train_fn], \
+			feed_dict = {self.X:X, self.Y:Y_2d, self.seqlen:seqlen})
+		return loss 		
+
+
+
 class Multihot_Rnn_Attention(MultihotRnnBase):
 	"""
 		single attention; scalar-level

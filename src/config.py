@@ -268,12 +268,11 @@ def get_multihot_rnn_dictionary_TF_MIMIC3_config():
 def get_multihot_rnn_dictionary_TF_truven_config():
 	config = {}
 	config['batch_size'] = 8
-	config['max_length'] = 20   
+	config['max_length'] = 10   
 	config['rnn_in_dim'] = 50
 	config['rnn_out_dim'] = 50
 	config['rnn_layer'] = 1
 	config['batch_first'] = True
-	config['num_class'] = 2
 	config['LR'] = 1e-1
 	config['test_num'] = 3358 
 	config['train_iter'] = int(9e4)   ### 3e4  
@@ -300,6 +299,8 @@ def get_multihot_rnn_dictionary_TF_truven_config():
 
 	lines = open(config['mapfile'], 'r').readlines()
 	config['input_dim'] = len(lines)
+	config['num_class'] = config['input_dim']
+	config['topk'] = 30 
 
 	config['separate_symbol_in_visit'] = ' '
 	config['separate_symbol_between_visit'] = ';'
