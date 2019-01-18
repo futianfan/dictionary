@@ -72,7 +72,8 @@ class LearningBase_truven(LearningBase):
 		total_loss, epoch, total_time = 0.0, 1, 0.0 
 		for i in range(self.train_iter):
 			t1 = time()
-			data, data_len, label = self.TrainData.next()
+			next_data = self.TrainData.next()
+			data, data_len, label = next_data[0], next_data[1], next_data[2]
 			loss = self.model.train(data, label, data_len)
 			total_time += time() - t1
 			total_loss += loss 
@@ -150,8 +151,60 @@ class LearningDictionary(LearningBase):
 		output = self.model.generation_prototype_patient()
 		np.save(self.config['prototype_npy'], output)
 
+class LearningDictionary_Truven(LearningBase_truven, LearningDictionary):
 
+	def __init__(self, config_fn, data_fn, model_fn):
+		LearningBase_truven.__init__(self, config_fn, data_fn, model_fn)
 
+	def train(self):
+		batch_num = self.TrainData.num_of_iter_in_a_epoch
+		epoch, total_classify_loss, total_recon_loss, total_dictionary_loss, total_time = 1, 0, 0, 0, 0
+		for i in range(self.train_iter):
+			t1 = time()
+			data, data_len, label, data_recon = self.TrainData.next()
+			classify_loss, recon_loss, dictionary_loss = self.model.train(data, label, data_len, data_recon)
+			total_time += time() - t1 
+			total_classify_loss += classify_loss
+			total_recon_loss += recon_loss
+			total_dictionary_loss += dictionary_loss
+			if i > 0 and i % batch_num == 0:
+				total_classify_loss /= batch_num
+				total_recon_loss /= batch_num
+				total_dictionary_loss /= batch_num
+				auc = self.test()
+				print('Epoch {}, classify Loss:{}, recon loss:{}, dictionary obj loss:{}, test AUC {}, time: {} sec'.format(
+					epoch, 
+					str(total_classify_loss)[:6], 
+					str(total_recon_loss)[:7], 
+					str(total_dictionary_loss)[:7], 
+					str(auc)[:6],
+					str(total_time)[:4])
+					)
+				epoch += 1
+				total_classify_loss, total_recon_loss, total_dictionary_loss, total_time = 0.0, 0.0, 0.0, 0.0
+		## save prototype patient 
+		output = self.model.generation_prototype_patient()
+		np.save(self.config['prototype_npy'], output)
+
+	def test(self):
+		batch_num = self.TestData.num_of_iter_in_a_epoch
+		label_all = []
+		predict_all = [] 
+		total_label_number = 0
+		total_correct_number = 0
+		for i in range(batch_num):
+			next_data = self.TestData.next()
+			data, data_len, label, data_recon = next_data[0], next_data[1], next_data[2], next_data[3]
+			output_prob = self.model.evaluate(data, data_len)
+			output_prob = output_prob[0]
+			prediction = [list(i[-self.topk:]) for i in np.argsort(output_prob,1)]
+			bs = len(label)
+			for j in range(bs):
+				true_label = set(label[j])
+				predict_label = set(prediction[j])
+				total_label_number += len(true_label)
+				total_correct_number += len(true_label.intersection(predict_label))
+		return total_correct_number / total_label_number
 
 
 if __name__ == "__main__":
@@ -176,12 +229,13 @@ if __name__ == "__main__":
 	'''
 
 	#### Truven; multihot-RNN; next-visit prediction
+	'''
 	from config import get_multihot_rnn_dictionary_TF_truven_config as config_fn
 	from stream import Create_truven as data_fn	
 	from model_tf import Multihot_Rnn_next_visit as model_fn
 	learn_base = LearningBase_truven(config_fn, data_fn, model_fn)
 	learn_base.train()
-
+	'''
 
 	#### MIMIC; multihot-RETAIN
 	'''
@@ -211,8 +265,12 @@ if __name__ == "__main__":
 	learn_base.train()
 	'''
 
-
-
+	### Truven; multihot-RNN; next-visit prediction 
+	from config import get_multihot_rnn_dictionary_TF_truven_config as config_fn
+	from stream import Create_truven as data_fn	
+	from model_tf import Multihot_dictionary_next_visit as model_fn
+	learn_base = LearningDictionary_Truven(config_fn, data_fn, model_fn)
+	learn_base.train()
 
 
 

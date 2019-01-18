@@ -293,8 +293,8 @@ def get_multihot_rnn_dictionary_TF_truven_config():
 	config['dictionary_size'] = 10
 
 	### MIMIC 3 
-	config['train_file'] = os.path.join(config['data_folder'], 'truven_5k')
-	config['test_file'] = os.path.join(config['data_folder'], 'truven_1k')
+	config['train_file'] = os.path.join(config['data_folder'], 'truven_2w')
+	config['test_file'] = os.path.join(config['data_folder'], 'truven_5k')
 	config['mapfile'] = os.path.join(config['data_folder'], 'truven_code2idx')
 
 	lines = open(config['mapfile'], 'r').readlines()

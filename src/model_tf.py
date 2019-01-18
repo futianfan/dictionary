@@ -136,6 +136,12 @@ class Multihot_Rnn_next_visit(MultihotRnnBase):
 		return loss 		
 
 
+	
+
+
+
+
+
 
 class Multihot_Rnn_Attention(MultihotRnnBase):
 	"""
@@ -314,6 +320,53 @@ class Multihot_Rnn_Dictionary(MultihotRnnBase):
 		output = output[0]
 		return output
 
+
+
+class Multihot_dictionary_next_visit(Multihot_Rnn_next_visit, Multihot_Rnn_Dictionary):
+	def _build_placeholder(self):
+		Multihot_Rnn_Dictionary._build_placeholder(self)
+
+
+	def _build(self):
+
+		Multihot_Rnn_Dictionary._build_placeholder(self)
+		Multihot_Rnn_next_visit._build_rnn(self)
+
+
+		#### I: dictionary learning module
+		Multihot_Rnn_Dictionary._build_dictionary(self)
+
+
+		### II: classify Module   改这个地方 
+		self.weight_classify = tf.Variable(tf.random_normal(shape = [self.dictionary_size, self.num_class]))
+		self.bias_classify = tf.Variable(tf.zeros(shape = [self.num_class]))
+		self.logits = tf.matmul(self.sparse_code, self.weight_classify) + self.bias_classify 
+		self.outputs_prob = tf.nn.sigmoid(self.logits)
+	
+
+		self._build_classify_loss()
+
+		### III: reconstruction module
+		self._build_reconstruction()
+		self._build_sparse_code_as_input()
+
+		### total loss 
+		self.total_loss = self.eta1 * self.dictionary_loss \
+						+ self.eta2 * self.reconstruction_loss\
+		 				+ self.eta3 * self.classify_loss
+		### train_op
+		self.train_fn = tf.train.GradientDescentOptimizer(learning_rate=self.LR).minimize(self.total_loss)
+		#acc_fn = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(Y, 1), tf.argmax(y_pred, 1)), tf.float32))
+
+
+	def train(self, X, Y_1d, seqlen, X_recon):
+		Y_2d = self._1dlabel_to_2dlabel(Y_1d)
+
+		#### sess.run 
+		classify_loss, reconstruction_loss, dictionary_loss, _ = self.sess.run(
+			[self.classify_loss, self.reconstruction_loss, self.dictionary_loss, self.train_fn], \
+			feed_dict = {self.X:X, self.Y:Y_2d, self.seqlen:seqlen, self.X_recon:X_recon})
+		return classify_loss, reconstruction_loss, dictionary_loss 
 
 
 

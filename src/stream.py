@@ -334,10 +334,9 @@ class Create_truven(Create_TF_Multihot_Dictionary_Data):
 		data_lst1d_mat = list(map(self.lst_to_multihot_vec, data_lst1d))
 		data_lst1d_mat = [i.reshape(1,-1) for i in data_lst1d_mat]
 		data_lst1d_mat = np.concatenate(data_lst1d_mat, axis = 0) 
-
 		data, batch_leng = self.batch_lst_to_data(data)
 
-		return data, batch_leng, self.label[bgn:endn]
+		return data, batch_leng, self.label[bgn:endn], data_lst1d_mat
 		##return self.label[bgn:endn], data, batch_leng, data_lst1d_mat
 		## self.data_lst[bgn:endn], self.data_lst_len[bgn:endn], self.data_lst1d[bgn:endn]
 	
