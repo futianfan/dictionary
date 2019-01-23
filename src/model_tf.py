@@ -91,6 +91,34 @@ class MultihotRnnBase(object):
 			feed_dict = {self.X:X, self.seqlen:seqlen})
 
 
+class AggregateBase(MultihotRnnBase):
+
+	def _build_placeholder(self):
+		self.X = tf.placeholder(dtype = tf.float32, shape = [None, self.input_dim])
+		self.Y = tf.placeholder(dtype = tf.float32, shape = [None, self.num_class])
+
+	def _build_rnn(self): 
+		'''
+			rnn-encoder
+		'''
+		batch_size = tf.shape(self.X)[0] 
+		weight_in = tf.Variable(tf.random_normal(shape = [self.input_dim, self.rnn_hidden_num]))
+		bias_in = tf.Variable(tf.zeros(shape = [self.rnn_hidden_num]))
+		weight_in_2 = tf.Variable(tf.random_normal(shape = [self.rnn_hidden_num, self.rnn_in_dim]))
+		bias_in_2 = tf.Variable(tf.zeros(shape = [self.rnn_in_dim]))
+		self.rnn_hidden_output = tf.tanh(tf.matmul(self.X, weight_in) + bias_in)
+		self.rnn_outputs = tf.matmul(self.rnn_hidden_output, weight_in_2) + bias_in_2
+
+	def train(self, X, Y_1d):
+		Y_2d = _1dlabel_to_2dlabel(Y_1d)
+		loss, _ = self.sess.run([self.classify_loss, self.train_fn], \
+			feed_dict = {self.X:X, self.Y:Y_2d})
+		return loss 
+	def evaluate(self, X):
+		return self.sess.run([self.outputs_prob], \
+			feed_dict = {self.X:X})
+
+
 class Multihot_Rnn_next_visit(MultihotRnnBase):
 	"""
 		Truven data, rnn-next-visit
@@ -319,7 +347,11 @@ class Multihot_Rnn_Dictionary(MultihotRnnBase):
 								feed_dict = {self.prototype_vec:prototype_vec})
 		output = output[0]
 		return output
-
+	'''
+	def evaluate(self, X, seqlen):  #### test
+		return self.sess.run([self.outputs_prob, self.output_recon], \
+			feed_dict = {self.X:X, self.seqlen:seqlen})
+	'''
 
 
 class Multihot_dictionary_next_visit(Multihot_Rnn_next_visit, Multihot_Rnn_Dictionary):

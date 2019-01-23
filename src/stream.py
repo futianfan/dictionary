@@ -171,6 +171,31 @@ class Create_Multihot_Data(object):
 		return datamat, batch_leng
 
 
+class Create_Aggregate_heart_failure(Create_Multihot_Data):
+
+	def __init__(self, is_train = True, **config):
+		Create_Multihot_Data.__init__(self, is_train, **config)
+		from functools import reduce
+		f = lambda x: list(set(reduce(lambda y,z:y+z, x)))
+		self.data_lst = list(map(f, self.data_lst))
+		def f(lst):
+			arr = np.zeros((1,self.admis_dim))
+			for i in lst:
+				arr[0][i] = 1
+			return arr 
+		self.data_lst = list(map(f, self.data_lst))
+
+	def next(self):
+		bgn = self.batch_id * self.batch_size
+		endn = bgn + self.batch_size
+		self.batch_id += 1
+		if self.batch_id > self.batch_num - 1:
+			np.random.shuffle(self.random_shuffle)
+			self.batch_id = 0
+		indx = self.random_shuffle[bgn:endn]
+		return np.concatenate([self.data_lst[i].reshape(1,-1) for i in indx], 0),\
+				 [self.label[i] for i in indx]
+
 
 
 '''
@@ -261,6 +286,7 @@ class Create_Multihot_Dictionary_Data(Create_Multihot_Data):
 
 
 
+
 class Create_TF_Multihot_Dictionary_Data(Create_Multihot_Dictionary_Data):
 	"""
 		tensorflow, multihot, dictionary, heart_failure
@@ -277,6 +303,17 @@ class Create_TF_Multihot_Dictionary_Data(Create_Multihot_Dictionary_Data):
 
 		data, batch_leng = self.batch_lst_to_data(data)
 		return data, batch_leng, label, data_lst1d_mat
+
+
+	def next_1(self):
+		data, label = Create_Multihot_Data.next0(self)
+		from functools import reduce
+		f = lambda line: reduce(lambda x,y:x+y, line)
+		data_lst1d = list(map(f, data))
+
+		data, batch_leng = self.batch_lst_to_data(data)
+		return data, batch_leng, label, data_lst1d
+ 		
 
 class Create_TF_Multihot_Dictionary_MIMIC(Create_TF_Multihot_Dictionary_Data, Create_Multihot_Data_MIMIC3):
 	"""
@@ -476,7 +513,7 @@ if __name__ == '__main__':
 	#print(TrainData.data_lst_0)
 
 	#### 6. truven
-	
+	'''
 	config = get_multihot_rnn_dictionary_TF_truven_config()
 	assert isinstance(config, dict)
 	TrainData = Create_truven(is_train = True, **config)
@@ -487,9 +524,13 @@ if __name__ == '__main__':
 		#print(data_lst_len)
 		#print(data_lst.shape)
 		#print(data_decoder.shape)
+	'''
 
-
-
+	### 7. aggregate feature
+	config = get_multihot_rnn_config()
+	TrainData = Create_Aggregate_heart_failure(is_train = True, **config)
+	TestData = Create_Aggregate_heart_failure(is_train = False, **config)
+	print(TrainData.data_lst_0)
 
 
 
