@@ -107,7 +107,7 @@ class AggregateBase(MultihotRnnBase):
 		weight_in_2 = tf.Variable(tf.random_normal(shape = [self.rnn_hidden_num, self.rnn_in_dim]))
 		bias_in_2 = tf.Variable(tf.zeros(shape = [self.rnn_in_dim]))
 		self.rnn_hidden_output = tf.tanh(tf.matmul(self.X, weight_in) + bias_in)
-		self.rnn_outputs = tf.matmul(self.rnn_hidden_output, weight_in_2) + bias_in_2
+		self.rnn_outputs = tf.nn.sigmoid(tf.matmul(self.rnn_hidden_output, weight_in_2) + bias_in_2)
 
 	def train(self, X, Y_1d):
 		Y_2d = _1dlabel_to_2dlabel(Y_1d)
@@ -352,6 +352,221 @@ class Multihot_Rnn_Dictionary(MultihotRnnBase):
 		return self.sess.run([self.outputs_prob, self.output_recon], \
 			feed_dict = {self.X:X, self.seqlen:seqlen})
 	'''
+
+	def evaluate2(self, X, seqlen):
+		return self.sess.run([self.output_recon], \
+			feed_dict = {self.X:X, self.seqlen:seqlen})		
+
+
+
+class Multihot_Rnn_Dictionary2(Multihot_Rnn_Dictionary):
+	"""
+		TF; dictionary 
+	"""
+	def _build_placeholder(self):
+		MultihotRnnBase._build_placeholder(self)
+		self.X_recon = tf.placeholder(dtype = tf.float32, shape = [None, self.input_dim])
+
+	def _build_dictionary(self): 
+		### forward
+		self.dictionary_matrix = tf.Variable(tf.random_normal(
+			shape = [self.rnn_in_dim , self.dictionary_size]), 
+			dtype = tf.float32)
+		self.DTD = tf.matmul(
+						 tf.transpose(self.dictionary_matrix, perm = [1,0]),
+						 self.dictionary_matrix)
+		self.invDTD = tf.linalg.inv(self.DTD)
+		self.invDTDDT = tf.matmul( 
+							self.invDTD,
+							tf.transpose(self.dictionary_matrix, perm = [1,0])
+							)
+		self.sparse_code_1 = tf.matmul( self.rnn_outputs,
+										tf.transpose(self.invDTDDT, perm = [1,0])
+			)  #### batch_size, dictionary_size 
+		self.sparse_code = tf.maximum(self.sparse_code_1 - self.lambda1, 0)
+
+		### loss 
+		self.dictionary_loss = (tf.norm(self.rnn_outputs - 
+								tf.matmul(self.sparse_code, tf.transpose(self.dictionary_matrix, perm = [1,0]))
+							))**2 \
+							+ self.lambda1 * tf.norm(tensor = self.sparse_code, ord = 1) \
+							+ self.lambda2 * (tf.norm(tensor = self.dictionary_matrix))**2
+
+	def _build_reconstruction(self):
+		### forward
+		self.sparse_code_normalized = tf.nn.l2_normalize(self.sparse_code, axis = 1)
+		self.ssf = tf.matmul(self.sparse_code_normalized, tf.transpose(self.dictionary_matrix, perm = [1,0]))
+		self.weight_reconstruction = tf.Variable(tf.random_normal(
+				shape = [self.rnn_in_dim, self.input_dim], 
+				dtype = tf.float32))
+		self.bias_reconstruction = tf.Variable(tf.zeros(
+				shape = [self.input_dim],
+				dtype = tf.float32
+			))   
+		self.output_recon = tf.matmul(self.ssf, self.weight_reconstruction) + self.bias_reconstruction ### tf.sigmoid() 
+		### loss 
+		self.reconstruction_loss0 = tf.nn.sigmoid_cross_entropy_with_logits(labels=self.X_recon,logits=self.output_recon)
+		self.reconstruction_loss1 = tf.reduce_sum(self.reconstruction_loss0, axis = 1)
+		self.reconstruction_loss = tf.reduce_mean(self.reconstruction_loss1)
+
+
+	def _build(self):
+		### placeholder 
+		self._build_placeholder()
+		### forward: rnn
+		self._build_rnn()
+
+		#### I: dictionary learning module
+		self._build_dictionary()
+
+
+		### II: classify Module 
+		self.weight_classify = tf.Variable(tf.random_normal(shape = [self.dictionary_size, self.num_class]))
+		self.bias_classify = tf.Variable(tf.zeros(shape = [self.num_class]))
+		self.logits = tf.matmul(self.sparse_code, self.weight_classify) + self.bias_classify 
+		self.outputs_prob = tf.nn.softmax(logits = self.logits, axis = 1)
+		self._build_classify_loss() 
+
+		### III: reconstruction module
+		self._build_reconstruction()
+
+		### total loss 
+		self.total_loss = self.eta1 * self.dictionary_loss \
+						+ self.eta2 * self.reconstruction_loss\
+		 				+ self.eta3 * self.classify_loss
+
+		### train_op
+		self.train_fn = tf.train.GradientDescentOptimizer(learning_rate=self.LR).minimize(self.total_loss)
+		#acc_fn = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(Y, 1), tf.argmax(y_pred, 1)), tf.float32))
+
+	def train(self, X, Y_1d, seqlen, X_recon):
+		Y_2d = _1dlabel_to_2dlabel(Y_1d)
+		classify_loss, reconstruction_loss, dictionary_loss, _, output_recon = self.sess.run(
+			[self.classify_loss, self.reconstruction_loss, self.dictionary_loss, self.train_fn, self.output_recon], \
+			feed_dict = {self.X:X, self.Y:Y_2d, self.seqlen:seqlen, self.X_recon:X_recon})
+		return classify_loss, reconstruction_loss, dictionary_loss, output_recon
+
+
+	def evaluate2(self, X, seqlen):
+		return self.sess.run([self.outputs_prob, self.output_recon], \
+			feed_dict = {self.X:X, self.seqlen:seqlen})		
+
+
+
+
+
+class fidelity_network(MultihotRnnBase):
+	def __init__(self, **config):
+		### hyperparameter list
+		'''self.max_length = config['max_length']
+		self.batch_size = config['batch_size']
+		self.input_dim = config['input_dim']
+		self.rnn_in_dim = config['rnn_in_dim']
+		self.rnn_out_dim = config['rnn_out_dim']
+		self.num_class = config['num_class']
+		self.LR = config['LR']'''
+		self.__dict__.update(config)
+		### build model
+		self._build()
+		### session 
+		self._open_session()
+
+	def _build_placeholder(self):
+		self.X = tf.placeholder(dtype = tf.float32, shape = [None, self.input_dim])
+		self.Y = tf.placeholder(dtype = tf.float32, shape = [None, self.num_class])
+
+	def _build_rnn(self):
+		weight_in = tf.Variable(tf.random_normal(shape = [self.input_dim, self.rnn_in_dim]))
+		bias_in = tf.Variable(tf.zeros(shape = [self.rnn_in_dim]))
+		self.rnn_outputs = tf.nn.tanh(tf.matmul(self.X, weight_in) + bias_in)
+
+
+	def _build_classify_loss(self):
+		self.classify_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=self.Y,logits=self.logits))
+
+
+	### build model
+	def _build(self):
+		### placeholder
+		self._build_placeholder()
+		### forward: rnn
+
+
+		### I: multilayer
+		
+		self._build_rnn()
+		weight = tf.Variable(tf.random_normal(shape = [self.rnn_in_dim, self.num_class]))
+		bias = tf.Variable(tf.zeros(shape = [self.num_class]))
+		self.logits = tf.matmul(self.rnn_outputs, weight) + bias 
+
+
+		### II: single layer
+		'''weight3 = tf.Variable(tf.random_normal(shape = [self.input_dim, self.num_class]))
+		bias3 = tf.Variable(tf.zeros(shape = [self.num_class]))
+		self.logits = tf.matmul(self.X, weight3) + bias3
+		'''
+
+
+		self.outputs_prob = tf.nn.softmax(logits = self.logits, axis = 1)
+		### loss 
+		self._build_classify_loss() 
+		### train_op
+		self.train_fn = tf.train.GradientDescentOptimizer(learning_rate=self.LR).minimize(self.classify_loss)
+		#acc_fn = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(Y, 1), tf.argmax(y_pred, 1)), tf.float32))
+
+	def train(self, X, Y_1d):
+		Y_2d = _1dlabel_to_2dlabel(Y_1d)
+		loss, _ = self.sess.run([self.classify_loss, self.train_fn], \
+			feed_dict = {self.X:X, self.Y:Y_2d})
+		return loss 
+
+	def evaluate(self, X):  #### test
+		return self.sess.run([self.outputs_prob], \
+			feed_dict = {self.X:X})
+
+
+
+class Multihot_Rnn_Dictionary_fidelity(Multihot_Rnn_Dictionary):
+	def _build_reconstruction(self):
+		Multihot_Rnn_Dictionary._build_reconstruction(self)
+		self.weight2 = tf.Variable(tf.random_normal(shape = [self.input_dim, self.num_class]))
+		self.bias2 = tf.Variable(tf.zeros(shape = [self.num_class]))
+		self.logits2 = tf.matmul(self.output_recon, self.weight2) + self.bias2 
+		self.outputs_prob2 = tf.nn.softmax(logits = self.logits2, axis = 1)
+
+		self.classify_loss2 = tf.reduce_mean(tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(
+			labels=self.Y,
+			logits=self.logits2), 1))
+
+	def _build(self):
+		### placeholder 
+		self._build_placeholder()
+		### forward: rnn
+		self._build_rnn()
+
+		#### I: dictionary learning module
+		self._build_dictionary()
+
+
+		### II: classify Module 
+		self.weight_classify = tf.Variable(tf.random_normal(shape = [self.dictionary_size, self.num_class]))
+		self.bias_classify = tf.Variable(tf.zeros(shape = [self.num_class]))
+		self.logits = tf.matmul(self.sparse_code, self.weight_classify) + self.bias_classify 
+		self.outputs_prob = tf.nn.softmax(logits = self.logits, axis = 1)
+		self._build_classify_loss() 
+
+		### III: reconstruction module
+		self._build_reconstruction()
+
+		### total loss 
+		self.total_loss = self.eta1 * self.dictionary_loss \
+						+ self.eta2 * self.reconstruction_loss\
+		 				+ self.eta3 * self.classify_loss\
+		 				+ self.eta3 * self.classify_loss2
+
+		### train_op
+		self.train_fn = tf.train.GradientDescentOptimizer(learning_rate=self.LR).minimize(self.total_loss)
+		#acc_fn = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(Y, 1), tf.argmax(y_pred, 1)), tf.float32))
 
 
 class Multihot_dictionary_next_visit(Multihot_Rnn_next_visit, Multihot_Rnn_Dictionary):

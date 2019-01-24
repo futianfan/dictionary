@@ -185,6 +185,10 @@ class Create_Aggregate_heart_failure(Create_Multihot_Data):
 			return arr 
 		self.data_lst = list(map(f, self.data_lst))
 
+	@property
+	def test_prp(self):
+		return self.data_lst[3].shape
+
 	def next(self):
 		bgn = self.batch_id * self.batch_size
 		endn = bgn + self.batch_size
@@ -530,7 +534,7 @@ if __name__ == '__main__':
 	config = get_multihot_rnn_config()
 	TrainData = Create_Aggregate_heart_failure(is_train = True, **config)
 	TestData = Create_Aggregate_heart_failure(is_train = False, **config)
-	print(TrainData.data_lst_0)
+	print(TrainData.test_prp)
 
 
 

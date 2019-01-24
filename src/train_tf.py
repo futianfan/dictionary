@@ -7,6 +7,19 @@ tf.set_random_seed(4)   ### 3,
 from time import time 
 
 
+def fidelity_compute(lst1, lst2):
+	assert len(lst1) == len(lst2)
+	from sklearn.metrics import roc_auc_score
+	lst3 = lst1[:]
+	lst3.sort()
+	fraction = 0.5 ## first 50% 
+	idx = int(len(lst3) * fraction)
+	threshold = lst3[idx]
+	lst4 = list(map(lambda x:1 if x > threshold else 0, lst1))
+	return roc_auc_score(lst4, lst2)	
+
+
+
 class LearningBase:
 	"""
 		can be used for 
@@ -210,6 +223,153 @@ class LearningDictionary(LearningBase):
 		output = self.model.generation_prototype_patient()
 		np.save(self.config['prototype_npy'], output)
 
+
+
+
+class LearningDictionary2(LearningDictionary):
+	"""
+		used for 
+			(1) HeartFailure; multihot-dictionary
+			(2) MIMIC; multihot-dictionary
+	"""
+
+	def __init__(self, config_fn, data_fn, model_fn, fidelity_model):
+		self.config = config_fn()
+		self.TrainData = data_fn(is_train = True, **self.config)
+		self.TestData = data_fn(is_train = False, **self.config)
+		self.model = model_fn(**self.config)
+		self.train_iter = self.config['train_iter']
+		self.fidelity_model = fidelity_model(**self.config)
+
+	def train(self):
+		batch_num = self.TrainData.num_of_iter_in_a_epoch
+		epoch, total_classify_loss, total_recon_loss, total_dictionary_loss, total_time = 1, 0, 0, 0, 0
+		fidelityloss_all = 0
+		for i in range(self.train_iter):
+			t1 = time()
+			data, data_len, label, data_recon = self.TrainData.next()
+			classify_loss, recon_loss, dictionary_loss, output_recon = self.model.train(data, label, data_len, data_recon)
+			fidelityloss = self.fidelity_model.train(output_recon, label)
+			fidelityloss_all += fidelityloss
+			total_time += time() - t1 
+			total_classify_loss += classify_loss
+			total_recon_loss += recon_loss
+			total_dictionary_loss += dictionary_loss
+			if i > 0 and i % batch_num == 0:
+				total_classify_loss /= batch_num
+				total_recon_loss /= batch_num
+				total_dictionary_loss /= batch_num
+				#auc, recall = self.test()
+				auc, fidelity_accu = self.test2()
+				#recon_loss_lst.append(total_recon_loss)
+				print('Epoch {}, classify Loss:{}, recon loss:{}, dictionary obj loss:{}, test AUC {}, fidelity auc {}, fidelity loss {}, time: {} sec'.format(
+					epoch, 
+					str(total_classify_loss)[:6], 
+					str(total_recon_loss)[:7], 
+					str(total_dictionary_loss)[:7], 
+					str(auc)[:6],
+					str(fidelity_accu)[:6],
+					str(fidelityloss_all)[:6],
+					str(total_time)[:4])
+					)
+				epoch += 1
+				total_classify_loss, total_recon_loss, total_dictionary_loss, total_time = 0.0, 0.0, 0.0, 0.0
+				fidelityloss_all = 0
+		## save prototype patient 
+		#_, output_recon_all = self.test2()
+		#print(output_recon_all.shape)
+
+	def test2(self):
+		from sklearn.metrics import roc_auc_score
+		batch_num = self.TestData.num_of_iter_in_a_epoch
+		label_all = []
+		predict_all = [] 
+		fidelity_all = []
+		for i in range(batch_num):
+			next_data = self.TestData.next()
+			data, data_len, label = next_data[0], next_data[1], next_data[2]
+			output = self.model.evaluate2(data, data_len)
+			output_prob, output_recon = output[0], output[1]	
+			output_prob = [i[1] for i in output_prob]
+			output_prob_fidelity = self.fidelity_model.evaluate(output_recon)[0]
+			output_prob_fidelity = [i[1] for i in output_prob_fidelity]
+			label_all.extend(label)
+			predict_all.extend(output_prob)
+			fidelity_all.extend(output_prob_fidelity)
+		return roc_auc_score(label_all, predict_all),  fidelity_compute(predict_all, fidelity_all)
+
+
+
+
+class LearningDictionaryFidelity(LearningDictionary):
+	"""
+		fidelity
+		used for 
+			(1) HeartFailure; multihot-dictionary
+			(2) MIMIC; multihot-dictionary
+	"""
+	def __init__(self, config_fn, data_fn, model_fn, fidelity_model):
+		LearningDictionary.__init__(self, config_fn, data_fn, model_fn)
+		self.fidelity_model = fidelity_model(**self.config)
+
+
+	'''	
+	def test(self):
+		auc_score =  LearningBase.test(self)
+
+		batch_num = self.TestData.num_of_iter_in_a_epoch
+		total_correct_number, total_label_number = 0, 0 
+		for i in range(batch_num):
+			next_data = self.TestData.next_1()
+			data, data_len, label, data_recon = next_data[0], next_data[1], next_data[2], next_data[3]
+			output_prob = self.model.evaluate(data, data_len)
+			X_recon = output_prob[1]
+			prediction = [list(i[-self.topk:]) for i in np.argsort(X_recon,1)]
+			bs = len(label)
+			for j in range(bs):
+				total_correct_number += len(list(filter(lambda x:x in data_recon[j], prediction)))
+				total_label_number += len(data_recon[j])
+			
+
+		return auc_score, total_correct_number * 1.0 / total_label_number		
+	'''
+
+	def train(self):
+		batch_num = self.TrainData.num_of_iter_in_a_epoch
+		epoch, total_classify_loss, total_recon_loss, total_dictionary_loss, total_time = 1, 0, 0, 0, 0
+		for i in range(self.train_iter):
+			t1 = time()
+			data, data_len, label, data_recon = self.TrainData.next()
+			classify_loss, recon_loss, dictionary_loss = self.model.train(data, label, data_len, data_recon)
+			output_recon = self.model.evaluate2(data, data_len)
+
+			total_time += time() - t1 
+			total_classify_loss += classify_loss
+			total_recon_loss += recon_loss
+			total_dictionary_loss += dictionary_loss
+			if i > 0 and i % batch_num == 0:
+				total_classify_loss /= batch_num
+				total_recon_loss /= batch_num
+				total_dictionary_loss /= batch_num
+				#auc, recall = self.test()
+				auc = self.test()
+				#recon_loss_lst.append(total_recon_loss)
+				print('Epoch {}, classify Loss:{}, recon loss:{}, dictionary obj loss:{}, test AUC {}, time: {} sec'.format(
+					epoch, 
+					str(total_classify_loss)[:6], 
+					str(total_recon_loss)[:7], 
+					str(total_dictionary_loss)[:7], 
+					str(auc)[:6],
+					str(total_time)[:4])
+					)
+				epoch += 1
+				total_classify_loss, total_recon_loss, total_dictionary_loss, total_time = 0.0, 0.0, 0.0, 0.0
+		## save prototype patient 
+		output = self.model.generation_prototype_patient()
+		np.save(self.config['prototype_npy'], output)
+
+
+
 class LearningDictionary_Truven(LearningBase_truven, LearningDictionary):
 
 	def __init__(self, config_fn, data_fn, model_fn):
@@ -243,6 +403,7 @@ class LearningDictionary_Truven(LearningBase_truven, LearningDictionary):
 					)
 				epoch += 1
 				total_classify_loss, total_recon_loss, total_dictionary_loss, total_time = 0.0, 0.0, 0.0, 0.0
+
 		## save prototype patient 
 		output = self.model.generation_prototype_patient()
 		np.save(self.config['prototype_npy'], output)
@@ -339,12 +500,29 @@ if __name__ == "__main__":
 	'''
 
 	### aggregate feature; heart failure
+	'''
 	from config import get_aggregate_config as config_fn
 	from stream import Create_Aggregate_heart_failure as data_fn	
 	from model_tf import AggregateBase as model_fn
 	learn_base = LearningAggregate(config_fn, data_fn, model_fn)
 	learn_base.train()
+	'''
 
+	'''
+	from config import get_multihot_rnn_dictionary_TF_config as config_fn
+	from stream import Create_TF_Multihot_Dictionary_Data as data_fn	
+	from model_tf import Multihot_Rnn_Dictionary as model_fn
+	from model_tf import fidelity_network
+	learn_base = LearningDictionaryFidelity(config_fn, data_fn, model_fn, fidelity_network)
+	learn_base.train()
+	'''
+
+	from config import get_multihot_rnn_dictionary_TF_MIMIC3_config as config_fn
+	from stream import Create_TF_Multihot_Dictionary_MIMIC as data_fn	
+	from model_tf import Multihot_Rnn_Dictionary2 as model_fn
+	from model_tf import fidelity_network as fidelity_model
+	learn_base = LearningDictionary2(config_fn, data_fn, model_fn, fidelity_model)
+	learn_base.train()
 
 
 
