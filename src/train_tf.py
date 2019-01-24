@@ -517,13 +517,25 @@ if __name__ == "__main__":
 	learn_base.train()
 	'''
 
+
+
+	#### compute fidelity MIMIC 3
+	'''
 	from config import get_multihot_rnn_dictionary_TF_MIMIC3_config as config_fn
 	from stream import Create_TF_Multihot_Dictionary_MIMIC as data_fn	
 	from model_tf import Multihot_Rnn_Dictionary2 as model_fn
 	from model_tf import fidelity_network as fidelity_model
 	learn_base = LearningDictionary2(config_fn, data_fn, model_fn, fidelity_model)
 	learn_base.train()
+	'''
 
+	#### compute fidelity heart failure
+	from config import get_multihot_rnn_dictionary_TF_config as config_fn
+	from stream import Create_TF_Multihot_Dictionary_Data as data_fn	
+	from model_tf import Multihot_Rnn_Dictionary2 as model_fn
+	from model_tf import fidelity_network as fidelity_model
+	learn_base = LearningDictionary2(config_fn, data_fn, model_fn, fidelity_model)
+	learn_base.train()
 
 
 
