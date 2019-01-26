@@ -459,6 +459,15 @@ if __name__ == "__main__":
 	learn_base = LearningBase_truven(config_fn, data_fn, model_fn)
 	learn_base.train()
 	'''
+
+	#### Truven; RETAIN attention; next-visit prediction;  
+	from config import get_multihot_rnn_dictionary_TF_truven_config as config_fn
+	from stream import Create_truven as data_fn	
+	from model_tf import Multihot_Rnn_Attention_next_visit as model_fn
+	learn_base = LearningBase_truven(config_fn, data_fn, model_fn)
+	learn_base.train()
+
+
 	#### MIMIC; multihot-RETAIN
 	'''
 	from config import get_multihot_rnn_MIMIC3_config as config_fn
@@ -489,14 +498,15 @@ if __name__ == "__main__":
 	learn_base.train()
 	'''
 
-	### Truven; multihot-RNN; next-visit prediction
-	
+	### Truven; multihot-RNN; next-visit prediction; dictionary 
+	'''
 	from config import get_multihot_rnn_dictionary_TF_truven_config as config_fn
 	from stream import Create_truven as data_fn	
 	from model_tf import Multihot_dictionary_next_visit as model_fn
 	learn_base = LearningDictionary_Truven(config_fn, data_fn, model_fn)
 	learn_base.train()
-	
+	'''
+
 
 	### aggregate feature; heart failure
 	'''

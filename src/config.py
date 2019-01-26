@@ -308,8 +308,9 @@ def get_multihot_rnn_dictionary_TF_truven_config():
 	config['batch_first'] = True
 	config['LR'] = 1e-1
 	config['test_num'] = 3358 
-	config['train_iter'] = int(3e4)   ### 3e4  
+	config['train_iter'] = int(9e4)   ### 3e4  
 	### batch_size=8 => 7000 iter <=> 1 epoch 
+	config['attention_size'] = 50
 
 	config['data_folder'] = './data'
 
