@@ -308,8 +308,8 @@ def get_multihot_rnn_dictionary_TF_truven_config():
 	config['batch_first'] = True
 	config['LR'] = 1e-1
 	config['test_num'] = 3358 
-	config['train_iter'] = int(9e4)   ### 3e4  
-	### batch_size=8 => 1680 iter <=> 1 epoch 
+	config['train_iter'] = int(3e4)   ### 3e4  
+	### batch_size=8 => 7000 iter <=> 1 epoch 
 
 	config['data_folder'] = './data'
 
@@ -332,8 +332,9 @@ def get_multihot_rnn_dictionary_TF_truven_config():
 
 	lines = open(config['mapfile'], 'r').readlines()
 	config['input_dim'] = len(lines)
+	assert len(lines) == 283
 	config['num_class'] = config['input_dim']
-	config['topk'] = 50 
+	config['topk'] = 30 
 
 	config['separate_symbol_in_visit'] = ' '
 	config['separate_symbol_between_visit'] = ';'

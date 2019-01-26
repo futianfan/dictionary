@@ -5,8 +5,8 @@ from time import time
 
 filename = 'data/truven_5w'
 testfile = 'data/truven_2w_test'
-#topk = 50
-topk = 30 
+topk = 50
+#topk = 30 
 t1 = time()
 lines = open(filename, 'r').readlines()
 f1 = lambda x:' '.join(x.rstrip().split(';'))
