@@ -146,7 +146,7 @@ def get_mnist_dictionary_config():
 
 	return config
 
-
+'''
 def get_multihot_rnn_MIMIC3_config():
 	config = {}
 	config['batch_size'] = 8
@@ -165,6 +165,65 @@ def get_multihot_rnn_MIMIC3_config():
 	config['train_file'] = os.path.join(config['data_folder'], 'mimic_train')
 	config['test_file'] = os.path.join(config['data_folder'], 'mimic_test')
 
+	config['separate_symbol_in_visit'] = ' '
+	config['separate_symbol_between_visit'] = ','
+	config['separate_symbol'] = '\t'
+
+	return config 
+'''
+
+
+
+def get_multihot_rnn_MIMIC3_icdcode_config():
+	config = {}
+	config['batch_size'] = 8
+	config['max_length'] = 5  ### 5 future work: try larger max-length  
+	config['input_dim'] = 942
+	config['rnn_in_dim'] = 50
+	config['rnn_out_dim'] = 50
+	config['rnn_layer'] = 1
+	config['batch_first'] = True
+	config['num_class'] = 2
+	config['LR'] = 1e-1
+	config['test_num'] = 3358 
+	config['train_iter'] = int(1e4)
+	config['attention_size'] = 50 
+
+	config['data_folder'] = './data'
+
+	### MIMIC 3 
+	config['train_file'] = os.path.join(config['data_folder'], 'mimic_train')
+	config['test_file'] = os.path.join(config['data_folder'], 'mimic_test')
+	config['separate_symbol_in_visit'] = ' '
+	config['separate_symbol_between_visit'] = ','
+	config['separate_symbol'] = '\t'
+
+	return config 
+
+
+def get_multihot_rnn_MIMIC3_ccs_config():
+	config = {}
+	config['batch_size'] = 8
+	config['max_length'] = 5  ### 5 future work: try larger max-length  
+	#config['input_dim'] = 942
+	config['rnn_in_dim'] = 50
+	config['rnn_out_dim'] = 50
+	config['rnn_layer'] = 1
+	config['batch_first'] = True
+	config['num_class'] = 2
+	config['LR'] = 1e-1
+	config['test_num'] = 3358 
+	config['train_iter'] = int(1e4)
+	config['attention_size'] = 50 
+
+	config['data_folder'] = './data'
+	config['mapfile'] = os.path.join(config['data_folder'], 'mimic_ccs_idx2text')
+	config['input_dim'] = len(open(config['mapfile'], 'r').readlines())
+	assert config['input_dim'] == 283
+
+	### MIMIC 3 
+	config['train_file'] = os.path.join(config['data_folder'], 'MimicCcsTrain')
+	config['test_file'] = os.path.join(config['data_folder'], 'MimicCcsTest')
 	config['separate_symbol_in_visit'] = ' '
 	config['separate_symbol_between_visit'] = ','
 	config['separate_symbol'] = '\t'
@@ -298,6 +357,52 @@ def get_multihot_rnn_dictionary_TF_MIMIC3_config():
 
 
 
+
+def get_multihot_rnn_dictionary_TF_MIMIC3_ccs_config():
+	config = {}
+	config['batch_size'] = 8
+	config['max_length'] = 5  ### 5 future work: try larger max-length  
+	config['rnn_in_dim'] = 50
+	config['rnn_out_dim'] = 50
+	config['rnn_layer'] = 1
+	config['batch_first'] = True
+	config['num_class'] = 2
+	config['LR'] = 1e-1
+	config['test_num'] = 3358 
+	config['train_iter'] = int(7e4) ##int(9e4)   ### 3e4  
+	### batch_size=8 => 750 iter <=> 1 epoch 
+
+	config['data_folder'] = './data'
+
+	config['result_folder'] = './result'
+	config['prototype_npy'] = os.path.join(config['result_folder'], 'mimic_prototype.npy')
+	config['prototype_text'] = os.path.join(config['result_folder'], 'mimic_prototype_topk')
+
+
+	config['eta1'] = 1e0	### dictionary
+	config['eta2'] = 1e-3	### reconstruction
+	config['eta3'] = 1		### classify
+	config['lambda1'] = 1e-3
+	config['lambda2'] = 1e-2	
+	config['dictionary_size'] = 10
+
+
+	config['separate_symbol_in_visit'] = ' '
+	config['separate_symbol_between_visit'] = ','
+	config['separate_symbol'] = '\t'
+	config['topk'] = 50 
+
+	config['mapfile'] = os.path.join(config['data_folder'], 'mimic_ccs_idx2text')
+	config['input_dim'] = len(open(config['mapfile'], 'r').readlines())
+	assert config['input_dim'] == 283
+
+	### MIMIC 3 
+	config['train_file'] = os.path.join(config['data_folder'], 'MimicCcsTrain')
+	config['test_file'] = os.path.join(config['data_folder'], 'MimicCcsTest')
+
+	return config 
+
+
 def get_multihot_rnn_dictionary_TF_truven_config():
 	config = {}
 	config['batch_size'] = 8
@@ -308,7 +413,7 @@ def get_multihot_rnn_dictionary_TF_truven_config():
 	config['batch_first'] = True
 	config['LR'] = 1e-1
 	config['test_num'] = 3358 
-	config['train_iter'] = int(9e4)   ### 3e4  
+	config['train_iter'] = int(9e5)   ### 3e4  
 	### batch_size=8 => 7000 iter <=> 1 epoch 
 	config['attention_size'] = 50
 
@@ -343,5 +448,49 @@ def get_multihot_rnn_dictionary_TF_truven_config():
 	return config 
 
 
+
+
+def get_dictionary_TF_truven_config_reconstruction():
+	config = {}
+	config['batch_size'] = 8
+	config['max_length'] = 10   
+	config['rnn_in_dim'] = 50
+	config['rnn_out_dim'] = 50
+	config['rnn_layer'] = 1
+	config['batch_first'] = True
+	config['LR'] = 1e-1
+	config['test_num'] = 3358 
+	config['train_iter'] = int(9e5)   ### 3e4  9e5
+	### batch_size=8 => 7000 iter <=> 1 epoch 
+	config['attention_size'] = 50
+
+	config['data_folder'] = './data'
+
+	config['result_folder'] = './result'
+	config['prototype_npy'] = os.path.join(config['result_folder'], 'truven_prototype.npy')
+	config['prototype_text'] = os.path.join(config['result_folder'], 'truven_prototype_topk')
+
+
+	config['eta1'] = 1e-3   ## 1e-2	### dictionary
+	config['eta2'] = 1e-3	### reconstruction
+	config['eta3'] = 1e-1		### classify
+	config['lambda1'] = 1e-3 
+	config['lambda2'] = 1e-3 ## 1e-2 	
+	config['dictionary_size'] = 20
+
+	config['train_file'] = os.path.join(config['data_folder'], 'truven_5w')
+	config['test_file'] = os.path.join(config['data_folder'], 'truven_2w')
+	config['mapfile'] = os.path.join(config['data_folder'], 'truven_code2idx')
+
+	lines = open(config['mapfile'], 'r').readlines()
+	config['input_dim'] = len(lines)
+	assert len(lines) == 283
+	config['num_class'] = config['input_dim']
+	config['topk'] = 30 
+
+	config['separate_symbol_in_visit'] = ' '
+	config['separate_symbol_between_visit'] = ';'
+	config['separate_symbol'] = '\t'
+	return config 
 
 

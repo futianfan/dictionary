@@ -246,6 +246,7 @@ class Create_Multihot_Data_MIMIC3(Create_Multihot_Data):
 		seqlst = line.split(self.separate_symbol)[2]
 		seqlst = seqlst.split(self.separate_symbol_between_visit)
 		seqlst = seqlst[:self.max_length]
+		seqlst = list(filter(None, seqlst))  ### filter out the empty list 
 		seqlst = [[int(i) for i in j.split(self.separate_symbol_in_visit)] for j in seqlst]
 		return seqlst
 

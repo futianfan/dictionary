@@ -357,11 +357,21 @@ class Multihot_Rnn_Dictionary(MultihotRnnBase):
 			feed_dict = {self.X:X, self.Y:Y_2d, self.seqlen:seqlen, self.X_recon:X_recon})
 		return classify_loss, reconstruction_loss, dictionary_loss 
 
-	def generation_prototype_patient(self):
+
+	def generate_sparse_code(self, X, seqlen):
+		sparse_code = self.sess.run(
+			[self.sparse_code],
+			feed_dict = {self.X:X, self.seqlen:seqlen})
+		sparse_code = sparse_code[0]
+		return sparse_code
+
+
+	def generation_prototype_patient(self, prototype_vec = None):
 		"""
 			[1, 0, 0, 0]   [0, 1, 0, 0]   [0, 0, 1, 0],  [0, 0, 0, 1]
 		"""
-		prototype_vec = np.eye(self.dictionary_size)
+		if prototype_vec == None:
+			prototype_vec = np.eye(self.dictionary_size)
 		output = self.sess.run([self.output_recon], 
 								feed_dict = {self.prototype_vec:prototype_vec})
 		output = output[0]
@@ -589,6 +599,11 @@ class Multihot_Rnn_Dictionary_fidelity(Multihot_Rnn_Dictionary):
 
 
 class Multihot_dictionary_next_visit(Multihot_Rnn_next_visit, Multihot_Rnn_Dictionary):
+	'''
+		truven   dictionary 
+
+	'''
+
 	def _build_placeholder(self):
 		Multihot_Rnn_Dictionary._build_placeholder(self)
 

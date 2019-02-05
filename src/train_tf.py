@@ -404,10 +404,20 @@ class LearningDictionary_Truven(LearningBase_truven, LearningDictionary):
 				epoch += 1
 				total_classify_loss, total_recon_loss, total_dictionary_loss, total_time = 0.0, 0.0, 0.0, 0.0
 
-		## save prototype patient 
-		output = self.model.generation_prototype_patient()
+			## save prototype patient  basis vector [1, 0 0 0 0],  [0 1 0 0 0 ]  [0 0 1 0 0 ]
+			#output = self.model.generation_prototype_patient()
+			#np.save(self.config['prototype_npy'], output)
+		batch_num = self.TrainData.num_of_iter_in_a_epoch
+		for j in range(batch_num):
+			data, data_len, _, _ = self.TrainData.next()
+			sparse_code = self.model.generate_sparse_code(data, data_len)
+			sparse_code_all = np.concatenate((sparse_code_all, sparse_code), 0) if j > 0 else sparse_code
+		sparse_code_all = sparse_code_all.transpose()
+		print(sparse_code_all.shape)
+		u, _, _ = np.linalg.svd(sparse_code_all, full_matrices = False)
+		u = u.transpose()
+		output = self.model.generation_prototype_patient(v)
 		np.save(self.config['prototype_npy'], output)
-
 
 	def test(self):
 		batch_num = self.TestData.num_of_iter_in_a_epoch
@@ -445,6 +455,7 @@ if __name__ == "__main__":
 	#### MIMIC; multihot-Rnn
 	'''
 	from config import get_multihot_rnn_MIMIC3_config as config_fn
+	#from config import get_multihot_rnn_MIMIC3_ccs_config as config_fn
 	from stream import Create_Multihot_Data_MIMIC3 as data_fn	
 	from model_tf import MultihotRnnBase as model_fn
 	learn_base = LearningBase(config_fn, data_fn, model_fn)
@@ -461,16 +472,18 @@ if __name__ == "__main__":
 	'''
 
 	#### Truven; RETAIN attention; next-visit prediction;  
+	'''
 	from config import get_multihot_rnn_dictionary_TF_truven_config as config_fn
 	from stream import Create_truven as data_fn	
 	from model_tf import Multihot_Rnn_Attention_next_visit as model_fn
 	learn_base = LearningBase_truven(config_fn, data_fn, model_fn)
 	learn_base.train()
-
+	'''
 
 	#### MIMIC; multihot-RETAIN
 	'''
-	from config import get_multihot_rnn_MIMIC3_config as config_fn
+	#from config import get_multihot_rnn_MIMIC3_config as config_fn
+	from config import get_multihot_rnn_MIMIC3_ccs_config as config_fn
 	from stream import Create_Multihot_Data_MIMIC3 as data_fn	
 	from model_tf import Multihot_Rnn_Attention as model_fn
 	learn_base = LearningBase(config_fn, data_fn, model_fn)
@@ -490,8 +503,10 @@ if __name__ == "__main__":
 	
 
 	#### MIMIC; multihot-dictionary
+	
+	#from config import get_multihot_rnn_dictionary_TF_MIMIC3_config as config_fn
 	'''
-	from config import get_multihot_rnn_dictionary_TF_MIMIC3_config as config_fn
+	from config import get_multihot_rnn_dictionary_TF_MIMIC3_ccs_config as config_fn
 	from stream import Create_TF_Multihot_Dictionary_MIMIC as data_fn	
 	from model_tf import Multihot_Rnn_Dictionary as model_fn
 	learn_base = LearningDictionary(config_fn, data_fn, model_fn)
@@ -506,6 +521,13 @@ if __name__ == "__main__":
 	learn_base = LearningDictionary_Truven(config_fn, data_fn, model_fn)
 	learn_base.train()
 	'''
+
+	### Truven focus on reconstruction 
+	from config import get_dictionary_TF_truven_config_reconstruction as config_fn
+	from stream import Create_truven as data_fn	
+	from model_tf import Multihot_dictionary_next_visit as model_fn
+	learn_base = LearningDictionary_Truven(config_fn, data_fn, model_fn)
+	learn_base.train()
 
 
 	### aggregate feature; heart failure
