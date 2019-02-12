@@ -227,7 +227,7 @@ class Multihot_Rnn_next_visit(MultihotRnnBase):
 
 class Multihot_Rnn_Attention_next_visit(Multihot_Rnn_Attention, Multihot_Rnn_next_visit):
 	"""
-		Truven data, rnn-next-visit
+		Truven data, attention, rnn-next-visit
 	"""
 	def _build_classify_loss(self):
 		Multihot_Rnn_next_visit._build_classify_loss(self)
@@ -281,8 +281,8 @@ class Multihot_Rnn_Dictionary(MultihotRnnBase):
 		self.sparse_code_1 = tf.matmul( self.rnn_outputs,
 										tf.transpose(self.invDTDDT, perm = [1,0])
 			)  #### batch_size, dictionary_size 
-		self.sparse_code = tf.maximum(self.sparse_code_1 - self.lambda1, 0)
-
+		#self.sparse_code = tf.maximum(self.sparse_code_1 - self.lambda1, 0)
+		self.sparse_code = self.sparse_code_1
 		### loss 
 		self.dictionary_loss = (tf.norm(self.rnn_outputs - 
 								tf.matmul(self.sparse_code, tf.transpose(self.dictionary_matrix, perm = [1,0]))
@@ -370,7 +370,7 @@ class Multihot_Rnn_Dictionary(MultihotRnnBase):
 		"""
 			[1, 0, 0, 0]   [0, 1, 0, 0]   [0, 0, 1, 0],  [0, 0, 0, 1]
 		"""
-		if prototype_vec == None:
+		if prototype_vec is None:
 			prototype_vec = np.eye(self.dictionary_size)
 		output = self.sess.run([self.output_recon], 
 								feed_dict = {self.prototype_vec:prototype_vec})
@@ -385,6 +385,26 @@ class Multihot_Rnn_Dictionary(MultihotRnnBase):
 	def evaluate2(self, X, seqlen):
 		return self.sess.run([self.output_recon], \
 			feed_dict = {self.X:X, self.seqlen:seqlen})		
+
+
+class SemiSupervised_Multihot_Rnn_Dictionary(Multihot_Rnn_Dictionary):
+
+
+	def _build_unsupervised(self):
+		self.unsupervised_loss = self.eta1 * self.dictionary_loss \
+						+ self.eta2 * self.reconstruction_loss
+		self.unsupervised_train_fn = tf.train.GradientDescentOptimizer(learning_rate=self.LR).minimize(self.unsupervised_loss)
+
+	def _build(self):
+		Multihot_Rnn_Dictionary._build(self)
+		self._build_unsupervised()
+
+	def UnsupervisedTrain(self, X, seqlen, X_recon):
+		reconstruction_loss, dictionary_loss, _ = self.sess.run(
+			[self.reconstruction_loss, self.dictionary_loss, self.unsupervised_train_fn], \
+			feed_dict = {self.X:X, self.seqlen:seqlen, self.X_recon:X_recon})
+		return reconstruction_loss, dictionary_loss 		
+
 
 
 
@@ -649,6 +669,25 @@ class Multihot_dictionary_next_visit(Multihot_Rnn_next_visit, Multihot_Rnn_Dicti
 			feed_dict = {self.X:X, self.Y:Y_2d, self.seqlen:seqlen, self.X_recon:X_recon})
 		return classify_loss, reconstruction_loss, dictionary_loss 
 
+
+class Semisupervised_Multihot_dictionary_next_visit(Multihot_dictionary_next_visit, SemiSupervised_Multihot_Rnn_Dictionary):
+
+	def _build(self):
+		Multihot_dictionary_next_visit._build(self)
+		SemiSupervised_Multihot_Rnn_Dictionary._build_unsupervised(self)
+		'''
+		self.unsupervised_loss = self.eta1 * self.dictionary_loss \
+						+ self.eta2 * self.reconstruction_loss
+		self.unsupervised_train_fn = tf.train.GradientDescentOptimizer(learning_rate=self.LR).minimize(self.unsupervised_loss)		
+		'''
+	'''
+	inherited from SemiSupervised_Multihot_Rnn_Dictionary
+	def UnsupervisedTrain(self, X, seqlen, X_recon):
+		reconstruction_loss, dictionary_loss, _ = self.sess.run(
+			[self.reconstruction_loss, self.dictionary_loss, self.unsupervised_train_fn], \
+			feed_dict = {self.X:X, self.seqlen:seqlen, self.X_recon:X_recon})
+		return reconstruction_loss, dictionary_loss 	
+	'''
 
 
 if __name__ == '__main__':

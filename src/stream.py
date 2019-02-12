@@ -328,6 +328,39 @@ class Create_TF_Multihot_Dictionary_MIMIC(Create_TF_Multihot_Dictionary_Data, Cr
 		Create_Multihot_Data_MIMIC3.__init__(self, is_train, **config)
 		self.admis_dim = config['input_dim']
 
+class Unsupervised_Create_TF_Multihot_Dictionary_MIMIC(Create_TF_Multihot_Dictionary_MIMIC):
+	"""
+		semi-supervised, tensorflow, multihot, dictionary, MIMIC 
+	"""
+	def __init__(self, is_train = True, **config):
+		Create_TF_Multihot_Dictionary_MIMIC.__init__(self, is_train, **config)
+		self.supervised_ratio = config['supervised_ratio']
+		self.total_ratio = config['total_ratio']
+		self.total_num = int(len(self.label) * self.total_ratio)
+		self.supervised_num = int(len(self.label) * self.supervised_ratio)
+		self.random_shuffle = np.random.shuffle(np.arange(self.total_num))
+		self.supervised_idx = self.random_shuffle[:self.supervised_num]
+		self.unsupervised_idx = self.random_shuffle[self.supervised_num:]
+
+		self.f = lambda line: reduce(lambda x,y:x+y, line)
+		data_lst1d = list((map(f,data)))
+
+		self.supervised_data_lst = [self.data_lst[i] for i in self.supervised_idx]
+		self.supervised_label = [self.label[i] for i in self.supervised_idx]
+
+		self.unsupervised_data_lst = [self.data_lst[i] for i in self.unsupervised_idx]
+		self.unsupervised_label = [self.label[i] for i in self.unsupervised_idx]
+
+
+
+
+
+
+
+
+
+
+
 
 
 class Create_truven(Create_TF_Multihot_Dictionary_Data):

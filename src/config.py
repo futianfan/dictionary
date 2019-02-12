@@ -367,9 +367,9 @@ def get_multihot_rnn_dictionary_TF_MIMIC3_ccs_config():
 	config['rnn_layer'] = 1
 	config['batch_first'] = True
 	config['num_class'] = 2
-	config['LR'] = 1e-1
+	config['LR'] = 1e-2
 	config['test_num'] = 3358 
-	config['train_iter'] = int(7e4) ##int(9e4)   ### 3e4  
+	config['train_iter'] = int(5e4) ## 7e4 ##int(9e4)   ### 3e4  
 	### batch_size=8 => 750 iter <=> 1 epoch 
 
 	config['data_folder'] = './data'
@@ -400,6 +400,33 @@ def get_multihot_rnn_dictionary_TF_MIMIC3_ccs_config():
 	config['train_file'] = os.path.join(config['data_folder'], 'MimicCcsTrain')
 	config['test_file'] = os.path.join(config['data_folder'], 'MimicCcsTest')
 
+	return config 
+
+
+def unsupervised_get_multihot_rnn_dictionary_TF_MIMIC3_ccs_config():
+	'''
+		MIMIC-3
+	'''
+	config = get_multihot_rnn_dictionary_TF_MIMIC3_ccs_config()
+	config['supervised_ratio'] = 0.2
+	config['total_ratio'] = 1.0
+	config['supervised_train'] = 'supervised_train'
+	config['unsupervised_train'] = 'unsupervised_train'
+	assert config['total_ratio'] > config['supervised_ratio']
+
+	return config 
+
+
+def unsupervised_get_multihot_rnn_dictionary_TF_config():
+	'''
+		Heart Failure 
+	'''
+	config = get_multihot_rnn_dictionary_TF_config()
+	config['supervised_ratio'] = 0.2
+	config['total_ratio'] = 1
+	config['supervised_train'] = 'supervised_train'
+	config['unsupervised_train'] = 'unsupervised_train'
+	assert config['total_ratio'] > config['supervised_ratio']
 	return config 
 
 
@@ -460,7 +487,7 @@ def get_dictionary_TF_truven_config_reconstruction():
 	config['batch_first'] = True
 	config['LR'] = 1e-1
 	config['test_num'] = 3358 
-	config['train_iter'] = int(9e5)   ### 3e4  9e5
+	config['train_iter'] = 2 * 60000 #int(3e3)   ### 3e4  9e5    50000 (N) / 8 (batch_size) * 10 (epoch) = 60000
 	### batch_size=8 => 7000 iter <=> 1 epoch 
 	config['attention_size'] = 50
 
@@ -473,7 +500,7 @@ def get_dictionary_TF_truven_config_reconstruction():
 
 	config['eta1'] = 1e-3   ## 1e-2	### dictionary
 	config['eta2'] = 1e-3	### reconstruction
-	config['eta3'] = 1e-1		### classify
+	config['eta3'] = 0		### classify
 	config['lambda1'] = 1e-3 
 	config['lambda2'] = 1e-3 ## 1e-2 	
 	config['dictionary_size'] = 20

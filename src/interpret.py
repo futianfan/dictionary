@@ -106,8 +106,7 @@ def interpret_mimic_ccs():
 		topk_ele = list((-vec).argsort())[:topk]
 		topk_ele = [code_map[i].capitalize() for i in topk_ele]
 		topk_ele = '; '.join(topk_ele)
-		fout.write('Prototype Patient_' + str(i) + ": ")
-		fout.write(topk_ele + '\n')
+		fout.write('\item ' + topk_ele + '\n\n')
 	fout.close()	
 
 
@@ -152,9 +151,9 @@ def interpret_truven_weight():
 
 if __name__ == '__main__':
 	#interpret_truven()
-	#interpret_mimic_ccs()
+	interpret_mimic_ccs()
 	#interpret_mimic_weight()
-	interpret_truven_weight()
+	#interpret_truven_weight()
 	#interpret_truven()
 
 
