@@ -474,7 +474,14 @@ def get_multihot_rnn_dictionary_TF_truven_config():
 	config['separate_symbol'] = '\t'
 	return config 
 
-
+def semisupervised_get_multihot_rnn_dictionary_TF_truven_config():
+	config = get_multihot_rnn_dictionary_TF_truven_config()
+	config['supervised_ratio'] = 0.2
+	config['total_ratio'] = 1.0
+	config['supervised_train'] = 'supervised_train'
+	config['unsupervised_train'] = 'unsupervised_train'
+	assert config['total_ratio'] > config['supervised_ratio']
+	return config
 
 
 def get_dictionary_TF_truven_config_reconstruction():

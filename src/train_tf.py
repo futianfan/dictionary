@@ -237,9 +237,13 @@ class LearningDictionary(LearningBase):
 
 
 class SemiSupervised_LearningDictionary(LearningDictionary):
-
+	'''
+		MIMIC
+	'''
 	def __init__(self, config_fn, data_fn, model_fn):
 		LearningBase.__init__(self, config_fn, data_fn, model_fn)
+		self._data_split()
+
 		'''
 		self.config = config_fn()
 		self.TrainData = data_fn(is_train = True, **self.config)
@@ -247,7 +251,7 @@ class SemiSupervised_LearningDictionary(LearningDictionary):
 		self.model = model_fn(**self.config)
 		self.train_iter = self.config['train_iter']
 		'''
-
+	def _data_split(self):
 		### split data  supervised / unsupervised
 		## config -> supervised_train
 		supervised_ratio = self.config['supervised_ratio']
@@ -266,10 +270,8 @@ class SemiSupervised_LearningDictionary(LearningDictionary):
 			for line in lines[int(len(lines) * supervised_ratio): int(len(lines) * total_ratio)]:
 				fout.write(line)
 
-
 		self.config['train_file'] = self.config['supervised_train']
 		self.SupervisedTrainData = data_fn(is_train = True, **self.config)
-
 		self.config['train_file'] = self.config['unsupervised_train']
 		self.UnsupervisedTrainData = data_fn(is_train = True, **self.config)
 
@@ -306,6 +308,9 @@ class SemiSupervised_LearningDictionary(LearningDictionary):
 				total_classify_loss, total_recon_loss, total_dictionary_loss, total_time = 0.0, 0.0, 0.0, 0.0
 
 class SemiSupervised_LearningDictionary_HF(SemiSupervised_LearningDictionary):
+	'''
+		Heart Failure:  data format processing
+	'''
 	def __init__(self, config_fn, data_fn, model_fn):
 		LearningBase.__init__(self, config_fn, data_fn, model_fn)
 
@@ -552,6 +557,16 @@ class LearningDictionary_Truven(LearningBase_truven, LearningDictionary):
 		return total_correct_number / total_label_number
 
 
+class SemiSupervised_LearningDictionary_Truven(LearningDictionary_Truven, SemiSupervised_LearningDictionary):
+
+	def __init__(self, config_fn, data_fn, model_fn):
+		LearningDictionary_Truven.__init__(self, config_fn, data_fn, model_fn) 
+		self._data_split()
+
+	def train(self):
+		SemiSupervised_LearningDictionary.train(self)
+
+
 if __name__ == "__main__":
 
 	####  HeartFailure; Multihot-Rnn
@@ -644,13 +659,20 @@ if __name__ == "__main__":
 	'''
 
 	### Truven; multihot-RNN; next-visit prediction; dictionary 
-	
+	'''
 	from config import get_multihot_rnn_dictionary_TF_truven_config as config_fn
 	from stream import Create_truven as data_fn	
 	from model_tf import Multihot_dictionary_next_visit as model_fn
 	learn_base = LearningDictionary_Truven(config_fn, data_fn, model_fn)
 	learn_base.train()
-	
+	''' 
+	### Semisupervised  Truven; multihot-RNN; next-visit prediction; dictionary 
+	from config import semisupervised_get_multihot_rnn_dictionary_TF_truven_config as config_fn
+	from stream import Create_truven as data_fn 
+	from model_tf import Semisupervised_Multihot_dictionary_next_visit as model_fn 
+	learn_base = SemiSupervised_LearningDictionary_Truven(config_fn, data_fn, model_fn)
+	learn_base.train() 
+
 
 	### Truven focus on reconstruction 
 	'''

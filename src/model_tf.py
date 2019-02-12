@@ -690,6 +690,7 @@ class Semisupervised_Multihot_dictionary_next_visit(Multihot_dictionary_next_vis
 	'''
 
 
+
 if __name__ == '__main__':
 	'''
 	from config import get_multihot_rnn_TF_config
