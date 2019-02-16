@@ -422,8 +422,8 @@ def unsupervised_get_multihot_rnn_dictionary_TF_config():
 		Heart Failure 
 	'''
 	config = get_multihot_rnn_dictionary_TF_config()
-	config['supervised_ratio'] = 0.2
-	config['total_ratio'] = 1
+	config['supervised_ratio'] = 0.50
+	config['total_ratio'] = 0.51
 	config['supervised_train'] = 'supervised_train'
 	config['unsupervised_train'] = 'unsupervised_train'
 	assert config['total_ratio'] > config['supervised_ratio']

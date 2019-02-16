@@ -42,6 +42,7 @@ class LearningBase:
 	def train(self):
 		batch_num = self.TrainData.num_of_iter_in_a_epoch
 		total_loss, epoch, total_time = 0.0, 1, 0.0 
+		best_auc = 0 
 		for i in range(self.train_iter):
 			t1 = time()
 			data, data_len, label = self.TrainData.next()
@@ -50,10 +51,13 @@ class LearningBase:
 			total_loss += loss 
 			if i > 0 and i % batch_num == 0:
 				auc = self.test()
-				print('Epoch {}, Loss: {}, test AUC {}, time: {} sec'.format(
+				if auc > best_auc:
+					best_auc = auc 
+				print('Epoch {}, Loss: {}, test AUC {}, best AUC {}, time: {} sec'.format(
 					epoch, 
 					str(total_loss / batch_num)[:5], 
 					str(auc)[:5], 
+					str(best_auc)[:5],
 					str(total_time)[:5]))
 				epoch += 1
 				total_time, total_loss = 0.0, 0.0
@@ -194,6 +198,7 @@ class LearningDictionary(LearningBase):
 	def train(self):
 		batch_num = self.TrainData.num_of_iter_in_a_epoch
 		epoch, total_classify_loss, total_recon_loss, total_dictionary_loss, total_time = 1, 0, 0, 0, 0
+		best_auc = 0 
 		for i in range(self.train_iter):
 			t1 = time()
 			data, data_len, label, data_recon = self.TrainData.next()
@@ -279,6 +284,7 @@ class SemiSupervised_LearningDictionary(LearningDictionary):
 	def train(self):
 		batch_num = self.SupervisedTrainData.num_of_iter_in_a_epoch
 		epoch, total_classify_loss, total_recon_loss, total_dictionary_loss, total_time = 1, 0, 0, 0, 0
+		best_auc = 0.0 
 		for i in range(self.train_iter):
 			t1 = time()
 			data, data_len, label, data_recon = self.SupervisedTrainData.next()
@@ -295,13 +301,16 @@ class SemiSupervised_LearningDictionary(LearningDictionary):
 				total_dictionary_loss /= batch_num
 				#auc, recall = self.test()
 				auc = self.test()
+				if auc > best_auc:
+					best_auc = auc
 				#recon_loss_lst.append(total_recon_loss)
-				print('Epoch {}, classify Loss:{}, recon loss:{}, dictionary obj loss:{}, test AUC {}, time: {} sec'.format(
+				print('Epoch {}, classify Loss:{}, recon loss:{}, dictionary obj loss:{}, test AUC {}, best AUC {}, time: {} sec'.format(
 					epoch, 
 					str(total_classify_loss)[:6], 
 					str(total_recon_loss)[:7], 
 					str(total_dictionary_loss)[:7], 
 					str(auc)[:6],
+					str(best_auc)[:6], 
 					str(total_time)[:4])
 					)
 				epoch += 1
@@ -650,14 +659,14 @@ if __name__ == "__main__":
 	'''
 
 	### Heart Failure, semi-supervised 
-	'''
+	
 	from config import unsupervised_get_multihot_rnn_dictionary_TF_config as config_fn
 	from stream import Create_TF_Multihot_Dictionary_Data as data_fn 
 	from model_tf import SemiSupervised_Multihot_Rnn_Dictionary as model_fn 
 	learn_base = SemiSupervised_LearningDictionary_HF(config_fn, data_fn, model_fn)
 	learn_base.train()
-	'''
-
+	
+	
 	### Truven; multihot-RNN; next-visit prediction; dictionary 
 	'''
 	from config import get_multihot_rnn_dictionary_TF_truven_config as config_fn
@@ -667,12 +676,13 @@ if __name__ == "__main__":
 	learn_base.train()
 	''' 
 	### Semisupervised  Truven; multihot-RNN; next-visit prediction; dictionary 
+	'''
 	from config import semisupervised_get_multihot_rnn_dictionary_TF_truven_config as config_fn
 	from stream import Create_truven as data_fn 
 	from model_tf import Semisupervised_Multihot_dictionary_next_visit as model_fn 
 	learn_base = SemiSupervised_LearningDictionary_Truven(config_fn, data_fn, model_fn)
 	learn_base.train() 
-
+	'''
 
 	### Truven focus on reconstruction 
 	'''
