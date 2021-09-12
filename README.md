@@ -1,28 +1,43 @@
-	nonnegative dictionary learning
-
-in tensorflow
+# DDL: Deep Dictionary Learning for Predictive Phenotyping. International Joint Conferences on Artificial Intelligence
 
 
-1. input data
-	test_data_1.txt
-	training_model_by_word2vec_1.vector
-	training_data_1.txt
 
 
-2. baseline: 
-	2.1 embedding + RCNN 
-	2.2 multi-hot + RNN: 
-		best AUC reaches 0.678+ about 35 epochs, 12 sec/epoch
 
-3. src:
-	model:
-	stream:
-		train_stream
-		valid_stream
-		test_stream 
+## conda 
 
-	config:
-	checkpoint:
-	
+```bash
+conda create -n pearl python=3.7 
+conda activate pearl 
+pip install torch 
+pip install scikit-learn 
+pip install matplotlib 
+```
+
+## data 
+
+
+
+## config 
+
+
+
+## model 
+
+
+## train 
+
+
+
+
+
+## Contact
+Tianfan Fu (futianfan@gmail.com)
+
+
+
+
+
+
 
 
